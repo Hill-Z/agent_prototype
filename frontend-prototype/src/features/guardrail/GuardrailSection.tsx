@@ -60,6 +60,11 @@ export function GuardrailSection({ config, dispatch }: GuardrailSectionProps) {
     setRuleDrawer(null);
   };
 
+  const configureBuiltin = (id: string, name: string, stage: GuardrailStage, ruleType: RuleType, action: GuardrailAction) => {
+    const existing = config.rules.find(rule => rule.id === id);
+    setRuleDrawer({ stage, rule: existing ?? { id, name, stages: [stage], executorType: 'LOCAL', ruleType, matcher: {}, action, enabled: true } });
+  };
+
   return (
     <>
       <ConfigSection title="护栏配置" icon={ShieldCheck} className="guardrail-section">
@@ -76,8 +81,8 @@ export function GuardrailSection({ config, dispatch }: GuardrailSectionProps) {
           <div className="guardrail-group-body">
             <div className="subsection-heading"><strong>平台内置能力</strong></div>
             <div className="capability-row"><div><strong>隐私与密钥</strong><p>手机号、证件号、银行卡、邮箱、API Key</p></div><button className="small-button" onClick={() => setPrivacyStage('INPUT')}>配置</button><Switch checked={config.privacy.enabled} onChange={enabled => dispatch({ type: 'set-privacy', privacy: { ...config.privacy, enabled } })} label="启用输入隐私与密钥" /></div>
-            <div className="capability-row"><div><strong>内容安全</strong><p>违法、色情、暴力、自伤与仇恨内容</p></div><button className="small-button">配置</button><Switch checked={config.builtin.contentSafety} onChange={enabled => dispatch({ type: 'set-builtin', key: 'contentSafety', enabled })} label="启用内容安全" /></div>
-            <div className="capability-row"><div><strong>Prompt Injection</strong><p>忽略规则、提示词泄露和越权指令</p></div><button className="small-button">配置</button><Switch checked={config.builtin.promptInjection} onChange={enabled => dispatch({ type: 'set-builtin', key: 'promptInjection', enabled })} label="启用 Prompt Injection" /></div>
+            <div className="capability-row"><div><strong>内容安全</strong><p>违法、色情、暴力、自伤与仇恨内容</p></div><button className="small-button" onClick={() => configureBuiltin('builtin-content-config', '平台内容安全策略', 'INPUT', 'CONTENT_MODERATION', 'BLOCK')}>配置</button><Switch checked={config.builtin.contentSafety} onChange={enabled => dispatch({ type: 'set-builtin', key: 'contentSafety', enabled })} label="启用内容安全" /></div>
+            <div className="capability-row"><div><strong>Prompt Injection</strong><p>忽略规则、提示词泄露和越权指令</p></div><button className="small-button" onClick={() => configureBuiltin('builtin-injection-config', 'Prompt Injection 策略', 'INPUT', 'CUSTOM', 'BLOCK')}>配置</button><Switch checked={config.builtin.promptInjection} onChange={enabled => dispatch({ type: 'set-builtin', key: 'promptInjection', enabled })} label="启用 Prompt Injection" /></div>
             <RuleTable stage="INPUT" rules={config.rules} onAdd={() => setRuleDrawer({ stage: 'INPUT', rule: null })} onEdit={rule => setRuleDrawer({ stage: 'INPUT', rule })} />
           </div>
         </details>
@@ -87,7 +92,7 @@ export function GuardrailSection({ config, dispatch }: GuardrailSectionProps) {
           <div className="guardrail-group-body">
             <div className="subsection-heading"><strong>平台内置能力</strong></div>
             <div className="capability-row"><div><strong>隐私信息防泄漏</strong><p>回复发送前识别并处理敏感字段</p></div><button className="small-button" onClick={() => setPrivacyStage('OUTPUT')}>配置</button><Switch checked={config.privacy.enabled} onChange={enabled => dispatch({ type: 'set-privacy', privacy: { ...config.privacy, enabled } })} label="启用输出隐私检测" /></div>
-            <div className="capability-row"><div><strong>违规回复检测</strong><p>内容安全分类与安全改写</p></div><button className="small-button">配置</button><Switch checked={config.builtin.outputSafety} onChange={enabled => dispatch({ type: 'set-builtin', key: 'outputSafety', enabled })} label="启用违规回复检测" /></div>
+            <div className="capability-row"><div><strong>违规回复检测</strong><p>内容安全分类与安全改写</p></div><button className="small-button" onClick={() => configureBuiltin('builtin-output-config', '违规回复检测策略', 'OUTPUT', 'CONTENT_MODERATION', 'REWRITE')}>配置</button><Switch checked={config.builtin.outputSafety} onChange={enabled => dispatch({ type: 'set-builtin', key: 'outputSafety', enabled })} label="启用违规回复检测" /></div>
             <RuleTable stage="OUTPUT" rules={config.rules} onAdd={() => setRuleDrawer({ stage: 'OUTPUT', rule: null })} onEdit={rule => setRuleDrawer({ stage: 'OUTPUT', rule })} />
           </div>
         </details>

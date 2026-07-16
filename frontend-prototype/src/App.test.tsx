@@ -10,7 +10,7 @@ describe('advanced agent configuration prototype', () => {
     render(<App />);
 
     expect(screen.getByText('Udesk Agent')).toBeInTheDocument();
-    expect(screen.getByText('新建一个测试')).toBeInTheDocument();
+    expect(screen.getByText('new高级智能体')).toBeInTheDocument();
     expect(screen.getByText('Doubao-Seed-2.0-pro')).toBeInTheDocument();
 
     for (const section of ['提示词', '思考模式', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
@@ -64,5 +64,41 @@ describe('advanced agent configuration prototype', () => {
 
     expect((await screen.findAllByText('CONFIRM')).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/138\*{4}8000/)).toBeInTheDocument();
+  });
+
+  it('configures skills and keeps the selection in the workspace', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const skillSection = screen.getByRole('heading', { name: '技能' }).closest('section')!;
+    await user.click(within(skillSection).getByRole('button', { name: '添加' }));
+    const dialog = screen.getByRole('dialog', { name: '选择技能' });
+    await user.click(within(dialog).getByText('客户意图识别'));
+    await user.click(within(dialog).getByRole('button', { name: '确认' }));
+
+    expect(within(skillSection).getByText('客户意图识别')).toBeInTheDocument();
+  });
+
+  it('opens model parameters and switches top-level workspace tabs', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Doubao-Seed-2.0-pro/ }));
+    expect(screen.getByRole('dialog', { name: '模型配置' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '日志' }));
+    expect(screen.getByText('运行日志实时捕获系统操作轨迹，详细记载用户请求与 AI 反馈的交互过程。')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '监控图表' }));
+    expect(screen.getByText('所有会话次数')).toBeInTheDocument();
+  });
+
+  it('adds a configurable session variable field', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const section = screen.getByRole('heading', { name: '会话变量' }).closest('section')!;
+    await user.click(within(section).getByLabelText('启用会话变量'));
+    await user.click(within(section).getAllByRole('button', { name: '添加' })[0]);
+    expect(within(section).getByText('字段 1')).toBeInTheDocument();
+    expect(within(section).getByLabelText('变量名')).toBeInTheDocument();
   });
 });
