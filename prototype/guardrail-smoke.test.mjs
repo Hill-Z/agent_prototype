@@ -66,3 +66,13 @@ test('prototype has no remote runtime dependencies or duplicate ids', () => {
   assert.equal(new Set(ids).size, ids.length);
 });
 
+test('configuration surface keeps local and third-party detection rules', () => {
+  assert.match(html, /本地违禁词检测/);
+  assert.match(html, /阿里云内容审核/);
+  assert.match(html, /自定义 HTTP/);
+  assert.match(html, /id="ruleExecutor"/);
+  assert.match(html, /id="providerFields"/);
+  assert.match(html, /id="thirdPartyOptions"/);
+  assert.doesNotMatch(html, /安全模式/);
+  assert.doesNotMatch(html, /正常路径额外延迟/);
+});
