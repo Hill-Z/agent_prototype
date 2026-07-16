@@ -30,4 +30,10 @@
 
 原型判定全部在浏览器本地完成。规则仅用于表达产品逻辑，不代表生产环境完整检测能力。
 
+运行零依赖冒烟测试：
+
+```powershell
+node --test prototype/guardrail-smoke.test.mjs
+```
+
 这是本地交互原型，不连接生产接口，不读取或保存真实 Agent 配置。
