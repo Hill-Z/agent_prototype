@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高级智能体配置原型 - Udesk Agent</title>
+  <style>
+    :root {
+      --blue: #2667f5;
+      --blue-50: #eef5ff;
+      --section: #edf7ff;
+      --purple: #7655d7;
+      --cyan: #16a9c8;
+      --text: #263141;
+      --muted: #8b96a8;
+      --line: #e7ebf1;
+      --surface: #ffffff;
+      --canvas: #f7f9fc;
+      --danger: #e55353;
+      --shadow: 0 1px 2px rgba(26, 46, 76, .04);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--canvas);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      overflow: hidden;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid rgba(38, 103, 245, .25);
+      outline-offset: 1px;
+    }
+
+    .app-shell { height: 100%; display: grid; grid-template-rows: 56px 1fr; }
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px 0 20px;
+      z-index: 5;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600; letter-spacing: .2px; }
+    .brand-mark { width: 26px; height: 26px; position: relative; }
+    .brand-mark::before, .brand-mark::after { content: ""; position: absolute; border-radius: 4px; transform: skew(-25deg); }
+    .brand-mark::before { width: 13px; height: 25px; left: 4px; background: #3568f5; }
+    .brand-mark::after { width: 13px; height: 17px; right: 1px; bottom: 0; background: #54b7e8; }
+    .top-actions { display: flex; align-items: center; gap: 22px; }
+    .grid-icon { color: #7e8998; font-size: 20px; }
+    .profile { display: flex; align-items: center; gap: 9px; color: #5b6574; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #315477, #07182b 65%); border: 2px solid #fff; box-shadow: 0 0 0 1px #d9e0ea; }
+    .profile small { display: block; color: #8a94a2; text-align: right; }
+
+    .body { min-height: 0; display: grid; grid-template-columns: 60px 1fr; }
+    .rail {
+      background: #f3f6fa;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 9px 0;
+      gap: 4px;
+      overflow: hidden;
+    }
+    .rail-btn {
+      width: 42px; height: 38px; border: 0; border-radius: 6px; background: transparent;
+      color: #718096; font-size: 17px; display: grid; place-items: center;
+    }
+    .rail-btn:hover { background: #e8edf4; color: #3d4c62; }
+    .rail-btn.active { background: #e6f0ff; color: var(--blue); }
+    .rail-spacer { flex: 1; }
+
+    .workbench { min-width: 0; min-height: 0; display: grid; grid-template-rows: 68px 1fr; background: #fff; }
+    .agentbar {
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 250px 1fr auto;
+      align-items: center;
+      padding: 0 14px 0 12px;
+      gap: 20px;
+      background: #fff;
+    }
+    .agent-id { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .back { width: 28px; border: 0; background: none; font-size: 25px; color: #2c3746; }
+    .agent-card { flex: 1; min-width: 0; display: flex; gap: 9px; align-items: center; background: #edf5ff; border-radius: 6px; padding: 8px 10px; }
+    .agent-avatar { width: 34px; height: 34px; border-radius: 7px; background: linear-gradient(145deg, #eab4a2, #5c718e); }
+    .agent-name { min-width: 0; font-weight: 600; font-size: 16px; }
+    .agent-name span { display: block; font-weight: 400; font-size: 11px; color: #8390a1; }
+    .agent-nav { height: 100%; display: flex; align-items: center; gap: 6px; }
+    .agent-nav a { color: #566273; text-decoration: none; padding: 11px 15px; border-radius: 8px; white-space: nowrap; }
+    .agent-nav a.active { background: #eef4ff; color: var(--blue); }
+    .publish-area { display: flex; align-items: center; gap: 8px; }
+    .model-chip { height: 36px; border: 1px solid #9aa9bf; border-radius: 10px; background: #fff; padding: 0 12px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .model-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px dashed #45556d; }
+    .badge { color: #6b64c6; border: 1px solid #cdc9f3; border-radius: 4px; font-size: 10px; padding: 0 4px; }
+    .icon-btn, .secondary-btn, .primary-btn { height: 36px; border-radius: 8px; padding: 0 15px; background: #fff; border: 1px solid var(--line); color: #354154; }
+    .icon-btn { width: 38px; padding: 0; }
+    .primary-btn { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    .workspace { min-height: 0; display: grid; grid-template-columns: minmax(560px, 1fr) minmax(460px, 1fr); background: #fff; }
+    .config-pane { min-height: 0; overflow-y: auto; padding: 0 16px 50px; border-right: 1px solid var(--line); scrollbar-width: thin; }
+    .preview-pane { min-width: 0; min-height: 0; display: grid; grid-template-rows: 52px 1fr 64px; background: #fafbfd; }
+    .preview-head { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #fff; border-bottom: 1px solid var(--line); font-weight: 600; }
+    .preview-empty { background: #fafbfd; }
+    .chat-box { margin: 10px 16px; background: #fff; border: 1px solid #f0f1f4; border-radius: 9px; display: flex; align-items: center; padding: 8px 14px; gap: 10px; box-shadow: var(--shadow); }
+    .chat-box textarea { flex: 1; height: 38px; resize: none; border: 0; outline: 0; padding: 9px 0; color: #7f8998; }
+
+    .section { background: var(--section); border-radius: 8px; margin-top: 14px; padding: 14px; box-shadow: var(--shadow); }
+    .section:first-child { margin-top: 0; border-radius: 0 0 8px 8px; }
+    .section-head { min-height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .section-title { display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 600; }
+    .section-icon { color: var(--purple); font-size: 18px; }
+    .section-actions { display: flex; gap: 8px; }
+    .mini-btn { height: 32px; padding: 0 14px; border: 1px solid var(--line); background: #fff; border-radius: 4px; color: #3f4a5b; }
+    .white-box { background: #fff; border: 1px solid #f0f1f4; border-radius: 8px; padding: 14px; margin-top: 10px; }
+    .row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+    .row.between { justify-content: space-between; }
+    .hint { color: var(--muted); font-size: 12px; }
+    .label { font-size: 13px; color: #465163; margin-bottom: 6px; }
+    .field { width: 100%; height: 38px; border: 1px solid #e1e6ed; border-radius: 6px; padding: 0 12px; color: #354154; background: #fff; }
+    textarea.field { height: 76px; padding: 10px 12px; resize: vertical; }
+    .prompt-editor { height: 198px; background: #fff; border: 1px solid #eef0f4; border-radius: 6px; color: #9aa3b1; padding: 14px; position: relative; }
+    .prompt-count { position: absolute; left: 12px; bottom: 10px; color: #818b9b; }
+    .radio-group { display: flex; gap: 18px; align-items: center; }
+    .radio { display: inline-flex; align-items: center; gap: 7px; }
+    .radio input { accent-color: var(--blue); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+    .switch { width: 29px; height: 17px; display: inline-block; position: relative; flex: 0 0 auto; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-track { position: absolute; inset: 0; background: #aeb8c5; border-radius: 99px; transition: .2s; }
+    .switch-track::after { content: ""; position: absolute; width: 13px; height: 13px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+    .switch input:checked + .switch-track { background: #3383e9; }
+    .switch input:checked + .switch-track::after { transform: translateX(12px); }
+
+    .empty-line { min-height: 57px; display: flex; align-items: center; justify-content: space-between; }
+    .empty-copy strong { display: block; font-weight: 500; margin-bottom: 5px; }
+    .text-link { color: #2f3b4d; background: transparent; border: 0; padding: 0; }
+    .delete { color: var(--danger); border: 0; background: none; }
+    .toast { position: fixed; top: 70px; left: 50%; transform: translate(-50%, -12px); opacity: 0; pointer-events: none; background: #273446; color: #fff; padding: 9px 16px; border-radius: 6px; transition: .2s; z-index: 20; }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+    @media (max-width: 1120px) {
+      .workspace { grid-template-columns: 1fr; }
+      .preview-pane { position: fixed; right: 16px; bottom: 16px; width: min(430px, calc(100vw - 92px)); height: 520px; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 14px 40px rgba(40, 55, 80, .18); z-index: 10; }
+      .preview-pane.collapsed { height: 52px; overflow: hidden; }
+      .agentbar { grid-template-columns: 230px 1fr; }
+      .publish-area { grid-column: 2; justify-self: end; position: absolute; right: 14px; }
+      .agent-nav { display: none; }
+    }
+
+    @media (max-width: 720px) {
+      .body { grid-template-columns: 48px 1fr; }
+      .rail-btn { width: 36px; }
+      .agentbar { grid-template-columns: 1fr; padding-right: 10px; }
+      .publish-area .model-chip, .publish-area .icon-btn { display: none; }
+      .agent-id { max-width: calc(100vw - 180px); }
+      .workspace { grid-template-columns: minmax(0, 1fr); }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .preview-pane { right: 8px; bottom: 8px; width: calc(100vw - 64px); }
+      .section { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark"></span><span>Udesk Agent</span></div>
+      <div class="top-actions">
+        <span class="grid-icon">&#8862;</span>
+        <div class="profile"><span class="avatar"></span><span>Admin123456<small>管理员</small></span><span>&#9662;</span></div>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="rail" aria-label="全局导航">
+        <button class="rail-btn">&#9682;</button>
+        <button class="rail-btn active">&#9638;</button>
+        <button class="rail-btn">▤</button>
+        <button class="rail-btn">&#9711;</button>
+        <button class="rail-btn">&#9881;</button>
+        <button class="rail-btn">&#9636;</button>
+        <button class="rail-btn">&#9783;</button>
+        <button class="rail-btn">&#9711;</button>
+        <button class="rail-btn">&#9635;</button>
+        <button class="rail-btn">&#9881;</button>
+        <button class="rail-btn">&#9670;</button>
+        <button class="rail-btn">&#8644;</button>
+        <button class="rail-btn">T</button>
+        <button class="rail-btn">&#9874;</button>
+        <button class="rail-btn">&#9633;</button>
+        <button class="rail-btn">&#8984;</button>
+        <button class="rail-btn">&#9745;</button>
+        <button class="rail-btn">&#9776;</button>
+        <div class="rail-spacer"></div>
+        <button class="rail-btn">&#8618;</button>
+      </aside>
+
+      <main class="workbench">
+        <header class="agentbar">
+          <div class="agent-id">
+            <button class="back" aria-label="返回">&#8249;</button>
+            <div class="agent-card">
+              <span class="agent-avatar"></span>
+              <div class="agent-name">新建一个测试<span>高级智能体</span></div>
+              <span>&#9881;</span>
+            </div>
+          </div>
+          <nav class="agent-nav">
+            <a class="active" href="#">编排</a><a href="#">API 文档</a><a href="#">日志</a><a href="#">监控图表</a><a href="#">人工审核</a>
+          </nav>
+          <div class="publish-area">
+            <button class="model-chip"><span class="model-dot"></span>Doubao-Seed-2.0-pro <span class="badge">CHAT</span> &#9881;</button>
+            <button class="icon-btn" id="historyBtn">&#8634;</button>
+            <button class="secondary-btn" id="saveBtn">保存</button>
+            <button class="primary-btn" id="publishBtn">发布 &#9662;</button>
+          </div>
+        </header>
+
+        <div class="workspace">
+          <section class="config-pane" aria-label="智能体配置">
+            <article class="section" id="promptSection">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#9998;</span>提示词 <span class="hint">&#9432;</span></div><div class="section-actions"><button class="mini-btn">＋ 创建</button><button class="mini-btn">&#9707; 词库</button><button class="mini-btn">&#9881; 生成</button></div></div>
+              <div class="prompt-editor" contenteditable="true">在这里写你的提示词，输入“{”插入变量、输入“/”插入提示内容块，输入 # 快捷唤起词库中的模板提示词列表<span class="prompt-count">0</span></div>
+            </article>
+
+            <article class="section">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#9711;</span>开场白</div></div>
+              <div class="row"><span>启用开场白</span><label class="switch"><input type="checkbox"><span class="switch-track"></span></label></div>
+            </article>
+
+            <article class="section">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#9883;</span>思考模式</div></div>
+              <div class="radio-group"><label class="radio"><input type="radio" name="think">快速思考</label><label class="radio"><input type="radio" name="think" checked>深度思考</label><label class="radio"><input type="radio" name="think">自定义</label></div>
+              <div class="label" style="margin-top:18px">最大思考步数</div><input class="field" type="number" value="3"><div class="hint">范围 1-10，默认 3</div>
+              <div class="label" style="margin-top:14px">最大重试次数</div><input class="field" type="number" value="3"><div class="hint">单步执行失败后的最大重试次数</div>
+            </article>
+
+            <article class="section"><div class="section-head"><div class="section-title"><span class="section-icon" style="color:var(--cyan)">ƒx</span>变量 <span class="hint">&#9432;</span></div><button class="mini-btn">&#9881; 设置</button></div><div class="white-box hint">变量能使用户输入表单引入提示词或开场白，你可以试试在提示词中输入 {{input}}</div></article>
+
+            <article class="section"><div class="section-head"><div class="section-title"><span class="section-icon">&#10022;</span>技能</div></div><div class="white-box empty-line"><div class="empty-copy"><strong>技能</strong><span class="hint">您可以添加 skill 作为智能体的技能</span></div><button class="text-link">＋ 添加</button></div></article>
+
+            <article class="section"><div class="section-head"><div class="section-title"><span class="section-icon">&#9874;</span>工具</div></div><div class="white-box empty-line"><div class="empty-copy"><strong>工具</strong><span class="hint">为智能体添加可调用的工具</span></div><button class="text-link">＋ 添加</button></div></article>
+
+            <article class="section"><div class="section-head"><div class="section-title"><span class="section-icon">&#9636;</span>知识库</div><button class="mini-btn" disabled>召回设置</button></div><div class="white-box empty-line"><div class="empty-copy"><strong>知识库</strong><span class="hint">您可以导入知识库作为上下文</span></div><button class="text-link">＋ 添加</button></div></article>
+
+            <article class="section">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#9711;</span>长期记忆</div></div>
+              <div class="row"><span>启用长期记忆</span><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+              <div class="grid-2"><div><div class="label">Agent记忆库</div><select class="field"><option>请选择</option></select></div><div><div class="label">用户记忆库</div><select class="field"><option>请选择</option></select></div></div>
+              <div class="grid-2" style="margin-top:12px"><div><div class="label">召回条数</div><input class="field" type="number" value="5"></div><div><div class="label">权重</div><input class="field" type="number" value="80"></div></div>
+            </article>
+
+            <article class="section">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#8645;</span>上下文压缩</div></div>
+              <div class="row"><span>启用上下文压缩</span><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+              <div class="grid-3"><div><div class="label">压缩触发轮次</div><input class="field" type="number" value="5"><div class="hint">范围 5-100</div></div><div><div class="label">Token阈值比例</div><input class="field" type="number" value="0.8" step="0.1"></div><div><div class="label">上下文窗口大小</div><input class="field" type="number" value="262144"></div></div>
+              <div class="row"><span>同步至长期记忆</span><label class="switch"><input type="checkbox"><span class="switch-track"></span></label></div>
+            </article>
+
+            <article class="section">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#9638;</span>会话变量</div></div>
+              <div class="row"><span>启用会话变量</span><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+              <div class="white-box empty-line"><div class="empty-copy"><strong>字段定义</strong><span class="hint">暂无字段定义，点击添加</span></div><button class="text-link">＋ 添加</button></div>
+              <div class="white-box empty-line"><div class="empty-copy"><strong>字段抽取</strong><span class="hint">暂无字段抽取，点击添加</span></div><button class="text-link">＋ 添加</button></div>
+            </article>
+
+            <article class="section">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#8634;</span>反思机制</div></div>
+              <div class="row"><span>启用反思</span><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+              <div class="label">最大反思次数</div><input class="field" type="number" value="5">
+              <div class="grid-2" style="margin-top:12px"><div><div class="label">反思强度</div><select class="field"><option>请选择</option></select></div><div><div class="label">反思模式</div><select class="field"><option>请选择</option></select></div></div>
+              <div class="label" style="margin-top:12px">自定义反思提示词</div><textarea class="field" placeholder="覆盖默认反思提示词，留空使用默认值"></textarea>
+            </article>
+
+            <article class="section">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#9812;</span>人工审核</div></div>
+              <div class="row"><span>启用人工审核</span><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+              <div class="white-box empty-line"><div class="empty-copy"><strong>需人工审核的工具</strong><span class="hint">暂无配置</span></div><button class="text-link">＋ 添加</button></div>
+              <div class="white-box empty-line"><div class="empty-copy"><strong>通知渠道</strong><span class="hint">暂无配置</span></div><button class="text-link">＋ 添加</button></div>
+            </article>
+
+            <article class="section" id="guardrailSection">
+              <div class="section-head"><div class="section-title"><span class="section-icon">&#9826;</span>护栏配置</div><button class="mini-btn">&#9998; 策略配置</button></div>
+              <div class="row"><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label></div>
+              <div class="label">兜底回复</div><textarea class="field" placeholder="触发护栏后的默认回复"></textarea>
+              <div class="white-box">
+                <div class="row between"><strong>输入护栏</strong><div class="row"><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label><button class="text-link">＋</button></div></div>
+                <div class="label">供应商</div><select class="field" style="max-width:140px"><option>阿里云</option></select>
+                <div class="white-box">
+                  <div class="grid-3"><div><div class="label">名称</div><input class="field" placeholder="请输入名称"></div><div><div class="label">状态</div><select class="field"><option>开启</option></select></div><div><div class="label">风险等级</div><select class="field"><option>高</option></select></div></div>
+                  <div class="grid-2" style="margin-top:12px"><div><div class="label">类型</div><select class="field"><option>关键词</option><option>正则</option></select></div><div><div class="label">操作</div><button class="delete">删除</button></div></div>
+                  <div class="label" style="margin-top:12px">匹配规则</div><textarea class="field" placeholder="请输入规则，关键词可用逗号分隔，正则请换行输入"></textarea>
+                </div>
+              </div>
+              <div class="white-box"><div class="row between"><strong>输出护栏</strong><div class="row"><label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label><button class="text-link">＋</button></div></div><div class="label">供应商</div><select class="field" style="max-width:140px"><option>内置</option></select><div class="hint" style="text-align:center;padding:24px 0 8px">暂无规则，请点击右上角添加</div></div>
+            </article>
+          </section>
+
+          <aside class="preview-pane" id="previewPane">
+            <div class="preview-head"><span>预览与调试</span><button class="text-link" id="previewToggle">&#8634;</button></div>
+            <div class="preview-empty"></div>
+            <div class="chat-box"><span>&#8963;<br>&#8964;</span><textarea placeholder="和机器人聊一聊吧"></textarea></div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const toast = document.getElementById('toast');
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', () => showToast('配置已保存'));
+    document.getElementById('publishBtn').addEventListener('click', () => showToast('原型环境：发布操作已模拟'));
+    document.getElementById('historyBtn').addEventListener('click', () => showToast('已恢复到最近保存状态'));
+    document.getElementById('previewToggle').addEventListener('click', () => {
+      if (window.innerWidth <= 1120) document.getElementById('previewPane').classList.toggle('collapsed');
+      else showToast('调试会话已重置');
+    });
+
+    document.querySelectorAll('a[href="#"]').forEach(link => link.addEventListener('click', event => event.preventDefault()));
+  </script>
+</body>
+</html>
