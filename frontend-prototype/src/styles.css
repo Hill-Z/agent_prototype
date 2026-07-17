@@ -221,10 +221,9 @@ input:focus, select:focus, textarea:focus { border-color: #64a9e9; box-shadow: 0
 .chat-composer textarea { min-height: 52px; padding: 7px 4px; border: 0; box-shadow: none; resize: none; }
 .multimodal-composer { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
 .multimodal-composer textarea { width: 100%; min-height: 42px; }
-.asr-ready-state { min-height: 24px; padding: 0 6px; display: flex; align-items: center; gap: 5px; color: #27866a; font-size: 10px; }
 .composer-toolbar { min-height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .attachment-actions { display: flex; align-items: center; gap: 2px; }
-.chat-composer .composer-tool-button { width: auto; height: 28px; padding: 0 7px; display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 5px; color: #6e798a; background: transparent; cursor: pointer; font-size: 11px; }
+.chat-composer .composer-tool-button { width: 30px; height: 28px; padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: 5px; color: #6e798a; background: transparent; cursor: pointer; }
 .chat-composer .composer-tool-button:hover { color: #247fcf; background: #eef6fd; }
 .chat-composer .composer-tool-button:disabled { color: #b5bdc9; background: transparent; cursor: not-allowed; }
 .chat-composer .composer-send { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 6px; color: #fff; background: #2787df; cursor: pointer; }
@@ -307,7 +306,6 @@ input:focus, select:focus, textarea:focus { border-color: #64a9e9; box-shadow: 0
 .setting-name { display: inline-flex; align-items: center; gap: 7px; }
 .setting-name svg { color: #398bd6; }
 .multimodal-fields { margin-top: 10px; }
-.multimodal-fields.three-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .trace-card { margin-top: 8px; padding: 10px; border: 1px solid #dde4eb; border-left: 3px solid #5aa2e5; border-radius: 4px; background: #fff; }
 .trace-card > div { justify-content: space-between; }
 .trace-card p { margin: 8px 0 0; display: grid; grid-template-columns: 1fr 1.2fr auto; align-items: center; gap: 7px; color: #667185; font-size: 11px; }

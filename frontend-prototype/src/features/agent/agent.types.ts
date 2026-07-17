@@ -27,12 +27,9 @@ export interface AgentConfig {
   responseExperience: { humanizedTimingEnabled: boolean; typingStyle: 'natural' | 'continuous'; initialDelayMs: number; minTypingMs: number };
   multimodal: {
     imageEnabled: boolean;
-    imageModel: string;
-    maxImages: number;
     audioEnabled: boolean;
     asrProvider: string;
     language: string;
-    maxAudioMinutes: number;
   };
   model: { id: string; preset: string; temperatureEnabled: boolean; temperature: number; topPEnabled: boolean; topP: number; frequencyEnabled: boolean; frequencyPenalty: number; presenceEnabled: boolean; presencePenalty: number; maxTokensEnabled: boolean; maxTokens: number; thinking: boolean };
 }
@@ -55,7 +52,7 @@ export const defaultAgentConfig: AgentConfig = {
   reflection: { enabled: false, maxCount: 5, intensity: '', mode: '', prompt: '' },
   manualReview: { enabled: false, tools: [], channels: [] },
   responseExperience: { humanizedTimingEnabled: true, typingStyle: 'natural', initialDelayMs: 500, minTypingMs: 800 },
-  multimodal: { imageEnabled: true, imageModel: 'Doubao-Seed-2.0-pro', maxImages: 4, audioEnabled: true, asrProvider: 'Udesk ASR', language: '自动识别', maxAudioMinutes: 5 },
+  multimodal: { imageEnabled: true, audioEnabled: true, asrProvider: 'Udesk ASR', language: '自动识别' },
   model: { id: 'Doubao-Seed-2.0-pro', preset: 'balanced', temperatureEnabled: false, temperature: 0, topPEnabled: false, topP: 0, frequencyEnabled: false, frequencyPenalty: 0, presenceEnabled: false, presencePenalty: -2, maxTokensEnabled: false, maxTokens: 1, thinking: false }
 };
 

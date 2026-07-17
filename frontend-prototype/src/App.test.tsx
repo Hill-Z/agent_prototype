@@ -34,7 +34,7 @@ describe('advanced agent configuration prototype', () => {
 
     expect(screen.getByText('payment-error.png')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('我想查询一下昨天购买的订单什么时候发货。')).toBeInTheDocument();
-    expect(screen.getByText('语音已转为文字，可修改后发送')).toBeInTheDocument();
+    expect(screen.queryByText('语音已转为文字，可修改后发送')).not.toBeInTheDocument();
     await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), ' 请结合截图判断问题');
     await user.click(screen.getByRole('button', { name: '发送消息' }));
 
@@ -53,6 +53,9 @@ describe('advanced agent configuration prototype', () => {
 
     expect(screen.getByRole('button', { name: '上传图片' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '开始录音' })).toBeDisabled();
+    expect(screen.queryByLabelText('图片理解模型')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('单次最大图片数')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('最大音频时长')).not.toBeInTheDocument();
   });
 
   it('keeps Agent execution compact in the conversation and exposes the log entry point', async () => {

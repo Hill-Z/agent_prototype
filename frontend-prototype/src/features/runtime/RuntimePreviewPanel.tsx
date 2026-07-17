@@ -13,6 +13,7 @@ interface RuntimePreviewProps {
 }
 
 const formatBytes = (size: number) => size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(size / 1024))} KB`;
+const PLATFORM_MAX_DEBUG_IMAGES = 4;
 
 export function RuntimePreviewPanel({ guardrail, responseExperience, multimodal }: RuntimePreviewProps) {
   const [mode, setMode] = useState<'debug' | 'customer'>('debug');
@@ -20,7 +21,6 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, multimodal 
   const [attachments, setAttachments] = useState<RuntimeAttachment[]>([]);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
-  const [asrReady, setAsrReady] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [runs, setRuns] = useState<RuntimeRun[]>([]);
   const imageInput = useRef<HTMLInputElement>(null);
@@ -53,7 +53,7 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, multimodal 
     });
     setAttachments(current => {
       if (kind === 'image') {
-        const remaining = Math.max(0, multimodal.maxImages - current.filter(item => item.kind === 'image').length);
+        const remaining = Math.max(0, PLATFORM_MAX_DEBUG_IMAGES - current.filter(item => item.kind === 'image').length);
         additions.slice(remaining).forEach(item => {
           if (item.previewUrl) { URL.revokeObjectURL(item.previewUrl); previewUrls.current.delete(item.previewUrl); }
         });
@@ -71,7 +71,6 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, multimodal 
     timers.current.push(window.setTimeout(() => {
       setText(getMockAsrTranscript());
       setTranscribing(false);
-      setAsrReady(true);
     }, 720));
   };
   const run = (value: string, selectedAttachments = attachments) => {
@@ -83,7 +82,6 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, multimodal 
     const id = `run-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     setRuns(current => [...current, { id, input: displayInput, attachments: selectedAttachments, result, scenario, completedSteps: 0, typingVisible: false, completed: false }]);
     setText('');
-    setAsrReady(false);
     setAttachments([]);
     if (responseExperience.humanizedTimingEnabled) timers.current.push(window.setTimeout(() => setRuns(current => current.map(item => item.id === id ? { ...item, typingVisible: true } : item)), responseExperience.initialDelayMs));
     let elapsed = 220;
@@ -105,11 +103,10 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, multimodal 
         setAttachments(current => current.filter(file => file.id !== item.id));
       }} />)}</div> : null}
       <textarea placeholder="和机器人聊一聊吧" value={text} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); run(text); } }} />
-      {asrReady ? <div className="asr-ready-state"><CheckCircle2 size={13} /><span>语音已转为文字，可修改后发送</span></div> : null}
       <div className="composer-toolbar">
         <div className="attachment-actions">
-          <button className="composer-tool-button" disabled={!multimodal.imageEnabled} onClick={() => imageInput.current?.click()} aria-label="上传图片" title={multimodal.imageEnabled ? '上传图片' : '图片识别未启用'}><Image size={16} /><span>图片</span></button>
-          <button className="composer-tool-button" disabled={!multimodal.audioEnabled} onClick={startRecording} aria-label="开始录音" title={multimodal.audioEnabled ? '录制语音' : '音频识别未启用'}><Mic size={16} /><span>语音</span></button>
+          <button className="composer-tool-button" disabled={!multimodal.imageEnabled} onClick={() => imageInput.current?.click()} aria-label="上传图片" title={multimodal.imageEnabled ? '上传图片' : '图片识别未启用'}><Image size={17} /></button>
+          <button className="composer-tool-button" disabled={!multimodal.audioEnabled} onClick={startRecording} aria-label="开始录音" title={multimodal.audioEnabled ? '录制语音' : '音频识别未启用'}><Mic size={17} /></button>
           <input ref={imageInput} className="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={event => { addFiles(event.target.files, 'image'); event.target.value = ''; }} />
         </div>
         <button className="composer-send" onClick={() => run(text)} aria-label="发送消息" disabled={!text.trim() && !attachments.length}><Send size={16} /></button>
