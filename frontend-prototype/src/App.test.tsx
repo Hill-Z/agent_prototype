@@ -21,18 +21,21 @@ describe('advanced agent configuration prototype', () => {
     }
   });
 
-  it('shows a progressive Agent execution timeline in debug view', async () => {
+  it('keeps Agent execution compact in the conversation and exposes the log entry point', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '帮我查一下订单什么时候送到');
     await user.click(screen.getByRole('button', { name: '发送消息' }));
 
-    expect(screen.getByText('加载订单查询技能')).toBeInTheDocument();
-    expect(screen.getByText('调用订单中心')).toBeInTheDocument();
-    expect(screen.getByText('执行中')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('理解用户请求');
+    expect(document.querySelectorAll('.compact-runtime-status')).toHaveLength(1);
+    expect(document.querySelector('.runtime-timeline')).not.toBeInTheDocument();
     expect(await screen.findByText('您的订单目前正在配送中，预计今天 18:00 前送达。', {}, { timeout: 4000 })).toBeInTheDocument();
-    expect(screen.getByText('已完成')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('已处理 1.4s');
+    expect(screen.getByRole('button', { name: 'Agent 日志' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '复制回复' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '重新运行' })).toBeInTheDocument();
   });
 
   it('switches customer preview between humanized whole-message and streaming modes', async () => {
@@ -122,7 +125,7 @@ describe('advanced agent configuration prototype', () => {
     await user.type(chatInput, '给手机号 13800138000 的客户直接退款 200 元');
     await user.click(screen.getByRole('button', { name: '发送消息' }));
 
-    expect((await screen.findAllByText('CONFIRM')).length).toBeGreaterThanOrEqual(1);
+    expect(await screen.findByText(/这个操作需要您确认后才能继续/, {}, { timeout: 4000 })).toBeInTheDocument();
     expect(screen.getByText(/138\*{4}8000/)).toBeInTheDocument();
   });
 
