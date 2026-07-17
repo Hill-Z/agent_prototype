@@ -16,6 +16,7 @@ export interface AgentConfig {
   maxRetries: number;
   variables: VariableDefinition[];
   skills: string[];
+  skillBindings: Record<string, { version: string; autoUpdate: boolean }>;
   tools: string[];
   knowledgeBases: string[];
   longMemory: { enabled: boolean; agentStore: string; userStore: string; recallCount: number; weight: number };
@@ -35,6 +36,7 @@ export const defaultAgentConfig: AgentConfig = {
   maxRetries: 3,
   variables: [],
   skills: [],
+  skillBindings: {},
   tools: [],
   knowledgeBases: [],
   longMemory: { enabled: false, agentStore: '', userStore: '', recallCount: 5, weight: 80 },

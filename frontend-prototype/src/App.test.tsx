@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import App from './App';
 
 describe('advanced agent configuration prototype', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState(null, '', '/');
+  });
 
   it('renders the current advanced-agent workspace and configuration modules', () => {
     render(<App />);
@@ -76,7 +79,8 @@ describe('advanced agent configuration prototype', () => {
     await user.click(within(dialog).getByText('客户意图识别'));
     await user.click(within(dialog).getByRole('button', { name: '确认' }));
 
-    expect(within(skillSection).getByText('客户意图识别')).toBeInTheDocument();
+    expect(within(skillSection).getAllByText('客户意图识别')).toHaveLength(2);
+    expect(within(skillSection).getByText(/v1.3.0 · 自动更新/)).toBeInTheDocument();
   });
 
   it('opens model parameters and switches top-level workspace tabs', async () => {
@@ -100,5 +104,43 @@ describe('advanced agent configuration prototype', () => {
     await user.click(within(section).getAllByRole('button', { name: '添加' })[0]);
     expect(within(section).getByText('字段 1')).toBeInTheDocument();
     expect(within(section).getByLabelText('变量名')).toBeInTheDocument();
+  });
+
+  it('opens the enhanced skill workspace and exercises version and validation flows', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/?view=skills');
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: '技能' })).toBeInTheDocument();
+    await user.click(screen.getByText('客户资料更新').closest('button')!);
+    expect(screen.getAllByText('SKILL.md')).toHaveLength(2);
+    expect(screen.getByDisplayValue(/Customer Profile Update/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '版本记录' }));
+    await user.click(screen.getAllByRole('button', { name: '恢复为草稿' })[1]);
+    expect(screen.getByText(/restored/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '合规校验' }));
+    await user.click(screen.getByRole('button', { name: '运行校验' }));
+    expect(screen.getAllByText('通过')).toHaveLength(4);
+  });
+
+  it('creates an AI-generated skill draft with category and tags', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/?view=skills');
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '创建技能' }));
+    const dialog = screen.getByRole('dialog', { name: '创建技能' });
+    await user.click(within(dialog).getByRole('button', { name: /AI 创建/ }));
+    await user.type(within(dialog).getByPlaceholderText('输入 Skills 显示名称'), '投诉升级处理');
+    await user.type(within(dialog).getByPlaceholderText('说明技能解决的问题及使用边界'), '识别高风险投诉并升级人工处理。');
+    await user.click(within(dialog).getByRole('button', { name: '风险操作' }));
+    await user.type(within(dialog).getByPlaceholderText('描述场景、输入、输出、工具和风险边界'), '要求保留证据并记录升级原因。');
+    await user.click(within(dialog).getByRole('button', { name: '生成技能' }));
+    await user.click(within(dialog).getByRole('button', { name: '创建草稿' }));
+
+    expect(screen.getByRole('heading', { name: '投诉升级处理' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/要求保留证据并记录升级原因/)).toBeInTheDocument();
   });
 });

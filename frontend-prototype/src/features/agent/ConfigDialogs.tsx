@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Copy, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/Modal';
 import { createId, type AgentConfig, type VariableDefinition } from './agent.types';
+import { skillVersionOptions } from '../skills/skill.types';
 
 export type DialogKind = null | 'createPrompt' | 'library' | 'generator' | 'variables' | 'skills' | 'tools' | 'knowledge' | 'publish';
 
@@ -25,6 +26,12 @@ function SelectionDialog({ title, options, selected, onClose, onSave, tabs }: { 
   </Modal>;
 }
 
+function SkillSelectionDialog({ config, onClose, onSave }: { config: AgentConfig; onClose: () => void; onSave: (skills: string[], bindings: AgentConfig['skillBindings']) => void }) {
+  const [query, setQuery] = useState(''); const [selected, setSelected] = useState(config.skills); const [bindings, setBindings] = useState(config.skillBindings);
+  const toggle = (skill: string) => { const exists = selected.includes(skill); setSelected(current => exists ? current.filter(item => item !== skill) : [...current, skill]); if (!exists && !bindings[skill]) setBindings(current => ({ ...current, [skill]: { version: skillVersionOptions[skill][0], autoUpdate: true } })); };
+  return <Modal title="选择技能" description="选择发布版本；自动更新只影响新的 Agent Run，不中断正在执行的技能。" wide onClose={onClose} footer={<DialogButtons close={onClose} save={() => onSave(selected, bindings)} />}><label className="search-field"><Search size={15} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索技能名称" /></label><div className="skill-binding-list">{skillOptions.filter(skill => skill.includes(query)).map(skill => { const active = selected.includes(skill); const binding = bindings[skill] ?? { version: skillVersionOptions[skill][0], autoUpdate: true }; return <div className={active ? 'active' : ''} key={skill}><label><input type="checkbox" checked={active} onChange={() => toggle(skill)} /><span><strong>{skill}</strong><small>{skillVersionOptions[skill].length} 个可用版本</small></span></label><select disabled={!active} value={binding.version} onChange={e => setBindings(current => ({ ...current, [skill]: { ...binding, version: e.target.value } }))}>{skillVersionOptions[skill].map(version => <option key={version}>{version}</option>)}</select><label className="auto-update"><input type="checkbox" disabled={!active} checked={binding.autoUpdate} onChange={e => setBindings(current => ({ ...current, [skill]: { ...binding, autoUpdate: e.target.checked } }))} />自动更新</label></div>; })}</div></Modal>;
+}
+
 export function ConfigDialogs({ kind, config, setConfig, close, notify }: { kind: DialogKind; config: AgentConfig; setConfig: React.Dispatch<React.SetStateAction<AgentConfig>>; close: () => void; notify: (message: string) => void }) {
   const [promptName, setPromptName] = useState('');
   const [promptDescription, setPromptDescription] = useState('');
@@ -37,7 +44,7 @@ export function ConfigDialogs({ kind, config, setConfig, close, notify }: { kind
   const templates = useMemo(() => ['专业客服问答', '售后问题处理', '线索信息收集'], []);
 
   if (!kind) return null;
-  if (kind === 'skills') return <SelectionDialog title="选择技能" options={skillOptions} selected={config.skills} onClose={close} onSave={skills => { setConfig(c => ({ ...c, skills })); close(); }} />;
+  if (kind === 'skills') return <SkillSelectionDialog config={config} onClose={close} onSave={(skills, skillBindings) => { setConfig(c => ({ ...c, skills, skillBindings })); close(); }} />;
   if (kind === 'tools') return <SelectionDialog title="选择工具" tabs={['内置工具', 'MCP 服务']} options={toolOptions} selected={config.tools} onClose={close} onSave={tools => { setConfig(c => ({ ...c, tools })); close(); }} />;
   if (kind === 'knowledge') return <SelectionDialog title="添加知识库" options={knowledgeOptions} selected={config.knowledgeBases} onClose={close} onSave={knowledgeBases => { setConfig(c => ({ ...c, knowledgeBases })); close(); }} />;
 
