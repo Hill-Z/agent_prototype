@@ -16,9 +16,56 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getByText('new高级智能体')).toBeInTheDocument();
     expect(screen.getAllByText('Doubao-Seed-2.0-pro').length).toBeGreaterThan(0);
 
-    for (const section of ['提示词', '思考模式', '回复体验', '多模态输入', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
+    for (const section of ['提示词', '思考模式', '回复体验', '对话管理', '主动服务', '多模态输入', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
       expect(screen.getByRole('heading', { name: section })).toBeInTheDocument();
     }
+  });
+
+  it('delivers a long answer as several semantic customer messages', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '客户视图' }));
+    await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '详细查询一下订单配送进度');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+
+    expect(await screen.findByText('我查到了，您的订单目前正在配送中。', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(await screen.findByText(/物流信息显示包裹今天上午已经到达本地配送站/, {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(await screen.findByText(/如果今晚仍未收到/, {}, { timeout: 4000 })).toBeInTheDocument();
+  });
+
+  it('sends one natural wait message before a long-running result', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '客户视图' }));
+    await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '帮我生成报表');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+
+    expect(await screen.findByText('稍等我一下，我正在整理报表数据。', {}, { timeout: 1800 })).toBeInTheDocument();
+    expect(await screen.findByText(/报表已经生成完成/, {}, { timeout: 4000 })).toBeInTheDocument();
+  });
+
+  it('cancels an unfinished run and replans when the user adds information', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const composer = screen.getByPlaceholderText('和机器人聊一聊吧');
+    await user.type(composer, '帮我生成报表');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+    await user.type(composer, '只看本月客服数据');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+
+    expect(screen.getByText('收到补充消息，已停止并重新规划')).toBeInTheDocument();
+    expect(screen.getByText('已合并上一条消息：帮我生成报表')).toBeInTheDocument();
+    expect(await screen.findByText(/报表已经生成完成/, {}, { timeout: 4000 })).toBeInTheDocument();
+  });
+
+  it('tests an event-driven proactive notification from its rule', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const service = screen.getByRole('heading', { name: '主动服务' }).closest('section')!;
+    await user.click(within(service).getAllByRole('button', { name: '测试' })[0]);
+
+    expect(screen.getByText('业务事件 · report.generated')).toBeInTheDocument();
+    expect(screen.getByText('您刚才申请的报表已经生成，可以查看了。')).toBeInTheDocument();
   });
 
   it('transcribes recorded speech into editable text before sending with an image', async () => {

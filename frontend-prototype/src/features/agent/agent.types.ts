@@ -24,7 +24,9 @@ export interface AgentConfig {
   session: { enabled: boolean; fields: SessionField[]; extractors: SessionExtractor[] };
   reflection: { enabled: boolean; maxCount: number; intensity: string; mode: string; prompt: string };
   manualReview: { enabled: boolean; tools: ReviewTool[]; channels: ReviewChannel[] };
-  responseExperience: { humanizedTimingEnabled: boolean; typingStyle: 'natural' | 'continuous'; initialDelayMs: number; minTypingMs: number };
+  responseExperience: { humanizedTimingEnabled: boolean; typingStyle: 'natural' | 'continuous'; initialDelayMs: number; minTypingMs: number; splitLongRepliesEnabled: boolean; maxReplyMessages: number };
+  conversationBehavior: { replanOnNewMessage: boolean; stopPendingMessages: boolean };
+  proactiveService: { longTaskNoticeEnabled: boolean; longTaskThresholdSeconds: number; asyncCompletionEnabled: boolean; suppressDuringActiveConversation: boolean };
   multimodal: {
     imageEnabled: boolean;
     audioEnabled: boolean;
@@ -51,7 +53,9 @@ export const defaultAgentConfig: AgentConfig = {
   session: { enabled: false, fields: [], extractors: [] },
   reflection: { enabled: false, maxCount: 5, intensity: '', mode: '', prompt: '' },
   manualReview: { enabled: false, tools: [], channels: [] },
-  responseExperience: { humanizedTimingEnabled: true, typingStyle: 'natural', initialDelayMs: 500, minTypingMs: 800 },
+  responseExperience: { humanizedTimingEnabled: true, typingStyle: 'natural', initialDelayMs: 500, minTypingMs: 800, splitLongRepliesEnabled: true, maxReplyMessages: 3 },
+  conversationBehavior: { replanOnNewMessage: true, stopPendingMessages: true },
+  proactiveService: { longTaskNoticeEnabled: true, longTaskThresholdSeconds: 10, asyncCompletionEnabled: true, suppressDuringActiveConversation: true },
   multimodal: { imageEnabled: true, audioEnabled: true, asrProvider: 'Udesk ASR', language: '自动识别' },
   model: { id: 'Doubao-Seed-2.0-pro', preset: 'balanced', temperatureEnabled: false, temperature: 0, topPEnabled: false, topP: 0, frequencyEnabled: false, frequencyPenalty: 0, presenceEnabled: false, presencePenalty: -2, maxTokensEnabled: false, maxTokens: 1, thinking: false }
 };

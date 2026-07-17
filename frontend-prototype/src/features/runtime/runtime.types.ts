@@ -31,6 +31,8 @@ export interface RuntimeStep {
 export interface RuntimeScenario {
   id: string;
   reply: string;
+  messages?: string[];
+  waitMessage?: string;
   steps: RuntimeStep[];
   recognition?: RecognitionResult;
 }
@@ -41,7 +43,12 @@ export interface RuntimeRun {
   attachments: RuntimeAttachment[];
   result: EvaluationResult;
   scenario: RuntimeScenario;
+  source: 'user' | 'proactive';
+  replannedFrom?: string;
   completedSteps: number;
+  visibleReplyMessages: number;
+  waitNoticeVisible: boolean;
   typingVisible: boolean;
   completed: boolean;
+  cancelled: boolean;
 }

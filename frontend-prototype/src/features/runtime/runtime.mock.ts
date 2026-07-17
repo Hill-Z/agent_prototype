@@ -1,10 +1,16 @@
 import type { EvaluationResult } from '../guardrail/guardrail.types';
 import multimodalMock from '../../../prototype-content/multimodal.mock.json';
+import conversationMock from '../../../prototype-content/conversation.mock.json';
 import type { RuntimeAttachment, RuntimeScenario, RuntimeStep } from './runtime.types';
 
 const step = (id: string, kind: RuntimeStep['kind'], title: string, detail: string, durationMs: number): RuntimeStep => ({ id, kind, title, detail, durationMs });
 
 export const getMockAsrTranscript = () => multimodalMock.audio.recognition.detail;
+
+export function createProactiveScenario(eventName: keyof typeof conversationMock.proactiveEvents): RuntimeScenario {
+  const reply = conversationMock.proactiveEvents[eventName];
+  return { id: `proactive-${eventName}`, reply, messages: [reply], steps: [step('event', 'analysis', '接收业务事件', `命中主动服务规则：${eventName}`, 120), step('notify', 'generation', '生成主动通知', '根据业务事实生成渠道无关消息', 180)] };
+}
 
 export function createRuntimeScenario(input: string, result: EvaluationResult, fallbackReply: string, attachments: RuntimeAttachment[] = []): RuntimeScenario {
   const safeInput = result.transformedText;
@@ -47,6 +53,32 @@ export function createRuntimeScenario(input: string, result: EvaluationResult, f
         step('input-guardrail', 'guardrail', '输入护栏完成', '敏感数据已脱敏，风险动作要求用户确认', 140),
         step('plan', 'analysis', '规划执行步骤', '确认身份与操作范围后再进入业务工具', 260),
         step('confirm', 'generation', '生成确认请求', '暂停工具执行并向用户请求明确确认', 180)
+      ]
+    };
+  }
+  if (input.includes(conversationMock.longTask.trigger)) {
+    return {
+      id: 'long-running-report',
+      reply: conversationMock.longTask.finalMessage,
+      messages: [conversationMock.longTask.finalMessage],
+      waitMessage: conversationMock.longTask.waitMessage,
+      steps: [
+        step('receive', 'analysis', '理解报表需求', '识别统计范围和报表指标', 180),
+        step('plan', 'analysis', '规划数据查询', '拆分咨询量、解决率和响应时长查询', 260),
+        step('tool', 'tool', '正在生成报表', '异步聚合本月客服数据', 1600),
+        step('compose', 'generation', '整理报表结果', '生成结果摘要和查看入口', 360)
+      ]
+    };
+  }
+  if (input.includes(conversationMock.longReply.trigger)) {
+    return {
+      id: 'segmented-order-reply',
+      reply: conversationMock.longReply.messages.join('\n\n'),
+      messages: conversationMock.longReply.messages,
+      steps: [
+        step('receive', 'analysis', '理解用户请求', '识别为订单配送详情查询', 170),
+        step('tool', 'tool', '查询物流详情', '返回配送节点和预计送达时间', 620),
+        step('plan-messages', 'generation', '规划多条回复', '按结论、详情和下一步建议拆成3条消息', 360)
       ]
     };
   }

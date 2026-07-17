@@ -15,5 +15,9 @@ export function ResponseExperienceSection({ config, update }: { config: AgentCon
         <label>最短展示时间<input type="number" min={300} max={5000} step={100} value={experience.minTypingMs} onChange={event => set({ minTypingMs: Number(event.target.value) })} /></label>
       </div>
     </div> : null}
+    <div className="response-experience-body">
+      <div className="setting-line"><strong>长回复拆成多条消息</strong><Switch checked={experience.splitLongRepliesEnabled} onChange={splitLongRepliesEnabled => set({ splitLongRepliesEnabled })} label="长回复拆成多条消息" /></div>
+      {experience.splitLongRepliesEnabled ? <div className="compact-number-field"><label>最多发送消息数<input aria-label="最多发送消息数" type="number" min={2} max={5} value={experience.maxReplyMessages} onChange={event => set({ maxReplyMessages: Number(event.target.value) })} /></label></div> : null}
+    </div>
   </ConfigSection>;
 }

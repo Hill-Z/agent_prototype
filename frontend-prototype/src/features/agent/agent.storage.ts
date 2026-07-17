@@ -9,6 +9,8 @@ function withDefaults(value: Partial<AgentConfig> | null): AgentConfig {
     ...defaults,
     ...value,
     responseExperience: { ...defaults.responseExperience, ...value?.responseExperience },
+    conversationBehavior: { ...defaults.conversationBehavior, ...value?.conversationBehavior },
+    proactiveService: { ...defaults.proactiveService, ...value?.proactiveService },
     multimodal: { ...defaults.multimodal, ...value?.multimodal }
   };
 }
