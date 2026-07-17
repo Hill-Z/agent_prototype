@@ -14,11 +14,45 @@ describe('advanced agent configuration prototype', () => {
 
     expect(screen.getByText('Udesk Agent')).toBeInTheDocument();
     expect(screen.getByText('new高级智能体')).toBeInTheDocument();
-    expect(screen.getByText('Doubao-Seed-2.0-pro')).toBeInTheDocument();
+    expect(screen.getAllByText('Doubao-Seed-2.0-pro').length).toBeGreaterThan(0);
 
-    for (const section of ['提示词', '思考模式', '回复体验', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
+    for (const section of ['提示词', '思考模式', '回复体验', '多模态输入', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
       expect(screen.getByRole('heading', { name: section })).toBeInTheDocument();
     }
+  });
+
+  it('transcribes recorded speech into editable text before sending with an image', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    const imageInput = container.querySelector('input[accept^="image/"]') as HTMLInputElement;
+
+    await user.upload(imageInput, new File(['image'], 'payment-error.png', { type: 'image/png' }));
+    await user.click(screen.getByRole('button', { name: '开始录音' }));
+    expect(screen.getByRole('dialog', { name: '语音录制' })).toBeInTheDocument();
+    expect(screen.getByText('录音中')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '完成录音' }));
+
+    expect(screen.getByText('payment-error.png')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('我想查询一下昨天购买的订单什么时候发货。')).toBeInTheDocument();
+    expect(screen.getByText('语音已转为文字，可修改后发送')).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), ' 请结合截图判断问题');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+
+    expect(screen.getByRole('status')).toHaveTextContent('正在读取图片');
+    expect(await screen.findByText('已识别 1 张图片', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByText(/从截图看，这是订单支付页/)).toBeInTheDocument();
+  });
+
+  it('disables media upload entry points with multimodal configuration switches', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const section = screen.getByRole('heading', { name: '多模态输入' }).closest('section')!;
+
+    await user.click(within(section).getByRole('checkbox', { name: '接收并识别图片' }));
+    await user.click(within(section).getByRole('checkbox', { name: '接收并识别语音和音频' }));
+
+    expect(screen.getByRole('button', { name: '上传图片' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '开始录音' })).toBeDisabled();
   });
 
   it('keeps Agent execution compact in the conversation and exposes the log entry point', async () => {

@@ -1,10 +1,32 @@
 import type { EvaluationResult } from '../guardrail/guardrail.types';
-import type { RuntimeScenario, RuntimeStep } from './runtime.types';
+import multimodalMock from '../../../prototype-content/multimodal.mock.json';
+import type { RuntimeAttachment, RuntimeScenario, RuntimeStep } from './runtime.types';
 
 const step = (id: string, kind: RuntimeStep['kind'], title: string, detail: string, durationMs: number): RuntimeStep => ({ id, kind, title, detail, durationMs });
 
-export function createRuntimeScenario(input: string, result: EvaluationResult, fallbackReply: string): RuntimeScenario {
+export const getMockAsrTranscript = () => multimodalMock.audio.recognition.detail;
+
+export function createRuntimeScenario(input: string, result: EvaluationResult, fallbackReply: string, attachments: RuntimeAttachment[] = []): RuntimeScenario {
   const safeInput = result.transformedText;
+  const images = attachments.filter(item => item.kind === 'image').length;
+  const audios = attachments.filter(item => item.kind === 'audio').length;
+  if (images || audios) {
+    const key = images && audios ? 'mixed' : images ? 'image' : 'audio';
+    const mock = multimodalMock[key];
+    const mediaSteps: RuntimeStep[] = [];
+    if (images) mediaSteps.push(step('vision', 'vision', audios ? '正在理解图片' : '正在理解图片', `使用视觉模型处理 ${images} 张图片并提取 OCR 文字`, 620));
+    if (audios) mediaSteps.push(step('asr', 'asr', audios && images ? '正在识别语音' : '正在识别语音', `音频转码后使用 ASR 识别 ${audios} 段语音`, 480));
+    return {
+      id: `multimodal-${key}`,
+      reply: mock.reply,
+      recognition: mock.recognition,
+      steps: [
+        step('receive-media', 'analysis', images && audios ? '正在处理图片和语音' : images ? '正在读取图片' : '正在读取音频', '校验媒体类型、大小并生成内部附件引用', 160),
+        ...mediaSteps,
+        step('compose-media', 'generation', '正在整理回复', '合并用户文字和媒体识别结果后生成回复', 360)
+      ]
+    };
+  }
   if (result.decision === 'BLOCK') {
     return {
       id: 'blocked-request',

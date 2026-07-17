@@ -5,7 +5,12 @@ const SAVED_KEY = 'uagent-advanced-config-saved-v1';
 
 function withDefaults(value: Partial<AgentConfig> | null): AgentConfig {
   const defaults = structuredClone(defaultAgentConfig);
-  return { ...defaults, ...value, responseExperience: { ...defaults.responseExperience, ...value?.responseExperience } };
+  return {
+    ...defaults,
+    ...value,
+    responseExperience: { ...defaults.responseExperience, ...value?.responseExperience },
+    multimodal: { ...defaults.multimodal, ...value?.multimodal }
+  };
 }
 
 export function loadAgentConfig(): AgentConfig {
