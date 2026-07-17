@@ -21,6 +21,19 @@ describe('advanced agent configuration prototype', () => {
     }
   });
 
+  it('resizes the preview panel with the keyboard-accessible divider', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const divider = screen.getByRole('separator', { name: '调整配置区和预览区宽度' });
+    expect(divider).toHaveAttribute('aria-valuenow', '440');
+    divider.focus();
+    await user.keyboard('{ArrowLeft}');
+    expect(divider).toHaveAttribute('aria-valuenow', '460');
+    await user.keyboard('{ArrowRight}');
+    expect(divider).toHaveAttribute('aria-valuenow', '440');
+  });
+
   it('adds a third-party input rule with provider configuration', async () => {
     const user = userEvent.setup();
     render(<App />);

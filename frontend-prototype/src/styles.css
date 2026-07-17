@@ -103,22 +103,27 @@ button { color: inherit; }
 .small-button:hover, .secondary-button:hover { border-color: #8fc4f4; color: #1678d2; }
 .small-button:disabled { cursor: not-allowed; color: #adb4bf; background: #f7f8fa; }
 
-.workspace { min-height: 0; flex: 1; display: grid; grid-template-columns: minmax(500px, 1fr) 440px; }
-.configuration-pane { min-width: 0; overflow-y: auto; padding: 14px 14px 42px; border-right: 1px solid #dfe5ec; }
+.workspace { min-height: 0; flex: 1; display: grid; overflow: hidden; }
+.workspace.is-resizing { cursor: col-resize; user-select: none; }
+.configuration-pane { min-width: 0; overflow-y: auto; padding: 14px 14px 42px; }
+.workspace-resizer { position: relative; z-index: 2; width: 8px; height: 100%; display: grid; place-items: center; color: #9aa5b4; background: #f5f7fa; border-right: 1px solid #dfe5ec; border-left: 1px solid #dfe5ec; cursor: col-resize; touch-action: none; outline: none; transition: color .15s, background .15s, border-color .15s; }
+.workspace-resizer::before { content: ""; position: absolute; inset: 0 -3px; }
+.workspace-resizer:hover, .workspace-resizer:focus-visible, .workspace.is-resizing .workspace-resizer { color: #167dd9; background: #eaf5ff; border-color: #7db8ec; }
 .config-section { margin: 0 0 12px; padding: 14px; border: 1px solid #dcebf7; border-radius: 6px; background: #edf7ff; }
 .config-section-header { min-height: 28px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.config-section-title { gap: 8px; }
+.config-section-title { min-width: max-content; gap: 8px; white-space: nowrap; }
 .config-section-title svg { color: #308bdc; }
 .config-section h2 { margin: 0; font-size: 14px; letter-spacing: 0; }
-.section-actions { gap: 6px; }
+.section-actions { flex: 0 0 auto; flex-wrap: nowrap; gap: 6px; white-space: nowrap; }
 .prompt-editor { min-height: 118px; padding: 11px; border: 1px solid #dce3ea; border-radius: 5px; background: #fff; outline: none; line-height: 1.7; }
 .prompt-editor:empty::before { content: attr(data-placeholder); color: #a0a8b5; }
 .prompt-editor:focus { border-color: #69ace9; box-shadow: 0 0 0 2px #dff0ff; }
 .character-count { display: block; margin-top: 5px; color: #9aa3b1; text-align: right; font-size: 11px; }
 .setting-line { justify-content: space-between; gap: 16px; min-height: 34px; }
 .setting-line p, .capability-row p, .empty-config-row p, .guardrail-group summary small { margin: 3px 0 0; color: #778397; font-size: 12px; line-height: 1.45; }
-.radio-line { display: flex; gap: 24px; margin-bottom: 13px; }
+.radio-line { display: flex; flex-wrap: nowrap; gap: 24px; margin-bottom: 13px; overflow-x: auto; }
 .radio-line label, .check-option { display: flex; align-items: center; gap: 7px; }
+.radio-line label { flex: 0 0 auto; white-space: nowrap; }
 input[type="radio"], input[type="checkbox"] { accent-color: #2388e6; }
 .stacked-field, .form-grid label, .two-column-form label, .custom-http-fields > label, .form-section > label {
   display: grid;

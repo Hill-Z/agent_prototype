@@ -1,5 +1,5 @@
-import { useEffect, useReducer, useState, type ReactNode } from 'react';
-import { Archive, ArrowLeft, Blocks, Bot, BrainCircuit, ChevronDown, CircleGauge, Clock3, Database, FileText, GalleryVerticalEnd, History, KeyRound, Layers3, ListChecks, MemoryStick, MessageSquareText, PanelLeftClose, PenLine, Play, Plus, RotateCcw, Save, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, TableProperties, Tags, UserRoundCheck, Variable, WandSparkles, Wrench } from 'lucide-react';
+import { useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
+import { Archive, ArrowLeft, Blocks, Bot, BrainCircuit, ChevronDown, CircleGauge, Clock3, Database, FileText, GalleryVerticalEnd, GripVertical, History, KeyRound, Layers3, ListChecks, MemoryStick, MessageSquareText, PanelLeftClose, PenLine, Play, Plus, RotateCcw, Save, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, TableProperties, Tags, UserRoundCheck, Variable, WandSparkles, Wrench } from 'lucide-react';
 import { ConfigSection } from './components/ConfigSection';
 import { Switch } from './components/Switch';
 import { ConfigDialogs, type DialogKind } from './features/agent/ConfigDialogs';
@@ -69,6 +69,48 @@ function PreviewPanel({ guardrail }: { guardrail: ReturnType<typeof loadGuardrai
 
 function Toast({ children }: { children: ReactNode }) { return <div className="toast" role="status">{children}</div>; }
 
+function ResizableWorkspace({ children }: { children: ReactNode }) {
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const [previewWidth, setPreviewWidth] = useState(440);
+  const [resizing, setResizing] = useState(false);
+  const clampWidth = (width: number) => {
+    const measuredWidth = workspaceRef.current?.getBoundingClientRect().width ?? 0;
+    const available = measuredWidth >= 820 ? measuredWidth : 1280;
+    return Math.min(Math.max(300, width), Math.max(300, Math.min(760, available - 520)));
+  };
+  const resizeFromPointer = (clientX: number) => {
+    const bounds = workspaceRef.current?.getBoundingClientRect();
+    if (bounds) setPreviewWidth(clampWidth(bounds.right - clientX));
+  };
+  return <div className={`workspace ${resizing ? 'is-resizing' : ''}`} ref={workspaceRef} style={{ gridTemplateColumns: `minmax(500px, 1fr) 8px ${previewWidth}px` }}>
+    {Array.isArray(children) ? children[0] : children}
+    <div
+      className="workspace-resizer"
+      role="separator"
+      aria-label="调整配置区和预览区宽度"
+      aria-orientation="vertical"
+      aria-valuemin={300}
+      aria-valuemax={760}
+      aria-valuenow={previewWidth}
+      tabIndex={0}
+      title="拖拽调整宽度，双击恢复默认"
+      onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); setResizing(true); resizeFromPointer(event.clientX); }}
+      onPointerMove={event => { if (resizing) resizeFromPointer(event.clientX); }}
+      onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setResizing(false); }}
+      onPointerCancel={() => setResizing(false)}
+      onDoubleClick={() => setPreviewWidth(440)}
+      onKeyDown={event => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.preventDefault();
+          setPreviewWidth(width => clampWidth(width + (event.key === 'ArrowLeft' ? 20 : -20)));
+        }
+        if (event.key === 'Home') setPreviewWidth(440);
+      }}
+    ><GripVertical size={14} aria-hidden="true" /></div>
+    {Array.isArray(children) ? children[1] : null}
+  </div>;
+}
+
 export default function App() {
   const [agentConfig, setAgentConfig] = useState(loadAgentConfig);
   const [guardrail, dispatch] = useReducer(guardrailReducer, undefined, loadGuardrailConfig);
@@ -76,5 +118,5 @@ export default function App() {
   const [area, setArea] = useState<'agent' | 'skills'>(() => new URLSearchParams(window.location.search).get('view') === 'skills' ? 'skills' : 'agent');
   useEffect(() => persistAgentConfig(agentConfig), [agentConfig]); useEffect(() => saveGuardrailConfig(guardrail), [guardrail]); useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 1800); return () => clearTimeout(timer); }, [toast]);
   const restore = () => { setAgentConfig(loadSavedSnapshot()); setToast('已恢复到最近保存状态'); };
-  return <div className="app-shell"><TopHeader />{area === 'skills' ? <SkillManagementPage onBack={() => setArea('agent')} /> : <><div className="app-body"><GlobalSidebar notify={setToast} openSkills={() => setArea('skills')} /><main className="workbench"><AgentHeader tab={tab} setTab={setTab} config={agentConfig} setConfig={setAgentConfig} notify={setToast} openPublish={() => setDialog('publish')} restore={restore} />{tab === 'orchestration' ? <div className="workspace"><ConfigurationPane config={agentConfig} setConfig={setAgentConfig} dialog={setDialog} guardrail={guardrail} dispatch={dispatch} /><PreviewPanel guardrail={guardrail} /></div> : tab === 'api' ? <ApiDocsView notify={setToast} /> : tab === 'logs' ? <LogsView /> : tab === 'monitor' ? <MonitorView /> : <ReviewView />}</main></div><ConfigDialogs kind={dialog} config={agentConfig} setConfig={setAgentConfig} close={() => setDialog(null)} notify={setToast} /></>}{toast ? <Toast>{toast}</Toast> : null}</div>;
+  return <div className="app-shell"><TopHeader />{area === 'skills' ? <SkillManagementPage onBack={() => setArea('agent')} /> : <><div className="app-body"><GlobalSidebar notify={setToast} openSkills={() => setArea('skills')} /><main className="workbench"><AgentHeader tab={tab} setTab={setTab} config={agentConfig} setConfig={setAgentConfig} notify={setToast} openPublish={() => setDialog('publish')} restore={restore} />{tab === 'orchestration' ? <ResizableWorkspace><ConfigurationPane config={agentConfig} setConfig={setAgentConfig} dialog={setDialog} guardrail={guardrail} dispatch={dispatch} /><PreviewPanel guardrail={guardrail} /></ResizableWorkspace> : tab === 'api' ? <ApiDocsView notify={setToast} /> : tab === 'logs' ? <LogsView /> : tab === 'monitor' ? <MonitorView /> : <ReviewView />}</main></div><ConfigDialogs kind={dialog} config={agentConfig} setConfig={setAgentConfig} close={() => setDialog(null)} notify={setToast} /></>}{toast ? <Toast>{toast}</Toast> : null}</div>;
 }
