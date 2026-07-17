@@ -7,14 +7,23 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #root { width: 100%; min-width: 320px; height: 100%; margin: 0; }
-body { overflow: hidden; font-size: 13px; }
+html, body, #root { width: 100%; min-width: 320px; height: 100%; margin: 0; overflow: hidden; }
+#root { position: fixed; inset: 0; }
+body { font-size: 13px; }
 button, input, select, textarea { font: inherit; }
 button { color: inherit; }
 
-.app-shell { height: 100vh; background: #f4f6f9; overflow: hidden; }
+.app-shell {
+  height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #f4f6f9;
+  overflow: hidden;
+}
 .top-header {
   height: 50px;
+  flex: 0 0 50px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -33,7 +42,7 @@ button { color: inherit; }
 .account-area small, .agent-chip small { color: #929aaa; font-size: 11px; }
 .account-avatar { width: 27px; height: 27px; border-radius: 50%; background: #e7edf6; border: 1px solid #dce3ec; }
 
-.app-body { height: calc(100vh - 50px); display: flex; }
+.app-body { min-height: 0; flex: 1; display: flex; }
 .global-sidebar {
   width: 50px;
   flex: 0 0 50px;
@@ -407,9 +416,10 @@ button.skills-row:hover { background: #f7fbff; }
 }
 
 @media (max-width: 960px) {
-  body { overflow: auto; }
-  .app-shell { min-height: 100vh; height: auto; overflow: visible; }
-  .app-body { height: auto; min-height: calc(100vh - 50px); }
+  html, body { height: auto; min-height: 100%; overflow: auto; }
+  #root { position: static; height: auto; min-height: 100dvh; overflow: visible; }
+  .app-shell { min-height: 100dvh; height: auto; overflow: visible; }
+  .app-body { flex: none; height: auto; min-height: calc(100dvh - 50px); }
   .agent-header { grid-template-columns: 1fr auto; }
   .agent-tabs { display: none; }
   .workspace { display: block; }
