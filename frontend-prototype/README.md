@@ -6,6 +6,8 @@ Implemented prototype flows include prompt creation/library/generation, model pa
 
 The enhanced desktop skills workspace covers ZIP and AI creation, categories and tags, file editing and preview, version restore, sandbox compliance checks, Agent references, AI optimization, publishing, and version-aware Agent binding. Open it directly at `/?view=skills`.
 
+The Agent workspace also includes a progressive debug timeline and a customer-view response simulator. The latter compares the platform streaming behavior with the configurable humanized IM mode that uses typing indicators and whole-message delivery.
+
 ```bash
 npm install
 npm run dev

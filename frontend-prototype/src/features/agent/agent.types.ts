@@ -24,6 +24,7 @@ export interface AgentConfig {
   session: { enabled: boolean; fields: SessionField[]; extractors: SessionExtractor[] };
   reflection: { enabled: boolean; maxCount: number; intensity: string; mode: string; prompt: string };
   manualReview: { enabled: boolean; tools: ReviewTool[]; channels: ReviewChannel[] };
+  responseExperience: { humanizedTimingEnabled: boolean; typingStyle: 'natural' | 'continuous'; initialDelayMs: number; minTypingMs: number };
   model: { id: string; preset: string; temperatureEnabled: boolean; temperature: number; topPEnabled: boolean; topP: number; frequencyEnabled: boolean; frequencyPenalty: number; presenceEnabled: boolean; presencePenalty: number; maxTokensEnabled: boolean; maxTokens: number; thinking: boolean };
 }
 
@@ -44,6 +45,7 @@ export const defaultAgentConfig: AgentConfig = {
   session: { enabled: false, fields: [], extractors: [] },
   reflection: { enabled: false, maxCount: 5, intensity: '', mode: '', prompt: '' },
   manualReview: { enabled: false, tools: [], channels: [] },
+  responseExperience: { humanizedTimingEnabled: true, typingStyle: 'natural', initialDelayMs: 500, minTypingMs: 800 },
   model: { id: 'Doubao-Seed-2.0-pro', preset: 'balanced', temperatureEnabled: false, temperature: 0, topPEnabled: false, topP: 0, frequencyEnabled: false, frequencyPenalty: 0, presenceEnabled: false, presencePenalty: -2, maxTokensEnabled: false, maxTokens: 1, thinking: false }
 };
 

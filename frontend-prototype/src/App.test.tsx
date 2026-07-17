@@ -16,9 +16,53 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getByText('new高级智能体')).toBeInTheDocument();
     expect(screen.getByText('Doubao-Seed-2.0-pro')).toBeInTheDocument();
 
-    for (const section of ['提示词', '思考模式', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
+    for (const section of ['提示词', '思考模式', '回复体验', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
       expect(screen.getByRole('heading', { name: section })).toBeInTheDocument();
     }
+  });
+
+  it('shows a progressive Agent execution timeline in debug view', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '帮我查一下订单什么时候送到');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+
+    expect(screen.getByText('加载订单查询技能')).toBeInTheDocument();
+    expect(screen.getByText('调用订单中心')).toBeInTheDocument();
+    expect(screen.getByText('执行中')).toBeInTheDocument();
+    expect(await screen.findByText('您的订单目前正在配送中，预计今天 18:00 前送达。', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByText('已完成')).toBeInTheDocument();
+  });
+
+  it('switches customer preview between humanized whole-message and streaming modes', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '客户视图' }));
+    await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '查询订单配送状态');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+    expect(await screen.findByLabelText('对方正在输入', {}, { timeout: 1800 })).toBeInTheDocument();
+    expect(screen.queryByText('调用订单中心')).not.toBeInTheDocument();
+    expect(await screen.findByText('您的订单目前正在配送中，预计今天 18:00 前送达。', {}, { timeout: 4000 })).toBeInTheDocument();
+
+    const responseSection = screen.getByRole('heading', { name: '回复体验' }).closest('section')!;
+    await user.click(within(responseSection).getByRole('checkbox', { name: '模拟真人回复节奏' }));
+    await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '再查询一次订单状态');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+    expect(container.querySelector('.streaming-message')).toBeInTheDocument();
+  });
+
+  it('restores legacy saved configurations without response experience fields', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('uagent-advanced-config-saved-v1', JSON.stringify({ prompt: '旧版本保存的提示词', thinkingMode: 'fast' }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '恢复已保存配置' }));
+
+    expect(screen.getByDisplayValue('旧版本保存的提示词')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: '模拟真人回复节奏' })).toBeChecked();
+    expect(screen.getByLabelText('输入状态节奏')).toHaveValue('natural');
   });
 
   it('resizes the preview panel with the keyboard-accessible divider', async () => {
