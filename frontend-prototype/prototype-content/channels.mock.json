@@ -1,0 +1,57 @@
+{
+  "channels": [
+    {
+      "id": "udesk_im",
+      "name": "Udesk IM",
+      "status": "connected",
+      "account": "默认在线客服账号",
+      "inbound": ["文本", "图片", "音频", "文件", "位置"],
+      "outbound": ["文本", "图片", "音频", "文件", "链接"],
+      "nativeFormats": ["普通消息", "引用回复"],
+      "unsupported": ["任意 HTML", "通用卡片 JSON"],
+      "assetInput": "URL / 文件标识 → asset_id",
+      "fallback": "文本 + 安全链接"
+    },
+    {
+      "id": "udesk_web",
+      "name": "网页插件",
+      "status": "connected",
+      "account": "官网 Web Chat",
+      "inbound": ["文本", "图片", "音频", "文件", "表单事件"],
+      "outbound": ["文本", "Markdown", "图片", "音频", "文件", "受控卡片"],
+      "nativeFormats": ["按钮", "订单卡片", "进度卡片", "表单"],
+      "unsupported": ["任意脚本", "未审核 iframe"],
+      "assetInput": "浏览器上传 → asset_id",
+      "fallback": "纯文本字段 + 操作链接"
+    },
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp",
+      "status": "connected",
+      "account": "+65 8000 2026",
+      "inbound": ["文本", "图片", "音频", "视频", "文档", "贴纸", "位置", "联系人", "Reaction"],
+      "outbound": ["文本", "图片", "音频", "视频", "文档", "贴纸", "位置", "联系人", "模板", "Interactive"],
+      "nativeFormats": ["Reply Button", "List", "Product", "Product List", "Catalog", "Flow"],
+      "unsupported": ["HTML", "任意卡片 JSON", "完整 Markdown"],
+      "assetInput": "media_id / URL → asset_id",
+      "fallback": "编号选项或模板文本"
+    },
+    {
+      "id": "x_dm",
+      "name": "X Direct Messages",
+      "status": "authorization",
+      "account": "@udesk_support",
+      "inbound": ["MessageCreate", "媒体附件", "成员事件"],
+      "outbound": ["文本", "媒体附件", "链接"],
+      "nativeFormats": ["一对一私信", "群组私信事件"],
+      "unsupported": ["按钮", "列表", "模板", "通用卡片"],
+      "assetInput": "media_id → asset_id",
+      "fallback": "纯文本 + 链接"
+    }
+  ],
+  "rules": [
+    { "id": "rule-wa-privacy", "name": "WhatsApp 首次会话隐私告知", "condition": "渠道 = WhatsApp 且未授权", "action": "发送模板并限制写操作", "enabled": true },
+    { "id": "rule-web-card", "name": "网页插件优先使用订单卡片", "condition": "渠道 = 网页插件 且命中订单场景", "action": "订单卡片，失败降级文本", "enabled": true },
+    { "id": "rule-x-text", "name": "X 使用短文本回复", "condition": "渠道 = X Direct Messages", "action": "短文本 + 链接", "enabled": true }
+  ]
+}

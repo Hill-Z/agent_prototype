@@ -21,6 +21,59 @@ describe('advanced agent configuration prototype', () => {
     }
   });
 
+  it('configures channel-native capabilities, behavior rules and context variables', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '渠道' }));
+    expect(screen.getByRole('heading', { name: 'WhatsApp' })).toBeInTheDocument();
+    expect(screen.getByText('Reply Button')).toBeInTheDocument();
+    expect(screen.getByText('media_id / URL → asset_id')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '降级' }));
+    expect(screen.getByText('已从结构化消息降级')).toBeInTheDocument();
+    expect(screen.getAllByText('编号选项或模板文本')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: '行为规则' }));
+    expect(screen.getByText('WhatsApp 首次会话隐私告知')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: '启用WhatsApp 首次会话隐私告知' }));
+    expect(screen.getByRole('checkbox', { name: '启用WhatsApp 首次会话隐私告知' })).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: '上下文变量' }));
+    expect(screen.getByText('channel.capabilities')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: '启用channel.capabilities' })).toBeChecked();
+  });
+
+  it('manages cross-channel identity, temporal memory and a conflict decision', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '长期记忆' }));
+    expect(screen.getByRole('heading', { name: '长期记忆' })).toBeInTheDocument();
+    expect(screen.getByText('退款审核中 · RF-20260718')).toBeInTheDocument();
+    expect(screen.getByText('待解决冲突')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('主标识'), 'CRM external_id');
+    expect(screen.getAllByText(/CRM external_id/).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: '采用推荐结果' }));
+    expect(screen.getByText('冲突已解决')).toBeInTheDocument();
+  });
+
+  it('separates realtime monitoring from historical reports', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '监控' }));
+    expect(screen.getByRole('heading', { name: '监控' })).toBeInTheDocument();
+    expect(screen.getByText('WhatsApp 模板发送失败率升高')).toBeInTheDocument();
+    expect(screen.getByText('Agent 运行链路')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '报表' }));
+    expect(screen.getByRole('heading', { name: '报表' })).toBeInTheDocument();
+    expect(screen.getByText('单解决成本')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '版本对比' }));
+    expect(screen.getByText('版本对比趋势')).toBeInTheDocument();
+  });
+
   it('delivers a long answer as several semantic customer messages', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -236,8 +289,8 @@ describe('advanced agent configuration prototype', () => {
 
     await user.click(screen.getByRole('button', { name: '日志' }));
     expect(screen.getByText('运行日志实时捕获系统操作轨迹，详细记载用户请求与 AI 反馈的交互过程。')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '监控图表' }));
-    expect(screen.getByText('所有会话次数')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '监控' }));
+    expect(screen.getByText('运行中 Run')).toBeInTheDocument();
   });
 
   it('adds a configurable session variable field', async () => {

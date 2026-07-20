@@ -1,5 +1,5 @@
 export type ThinkingMode = 'fast' | 'deep' | 'custom';
-export type WorkspaceTab = 'orchestration' | 'api' | 'logs' | 'monitor' | 'review';
+export type WorkspaceTab = 'orchestration' | 'channels' | 'memory' | 'api' | 'logs' | 'monitor' | 'reports' | 'review';
 
 export interface VariableDefinition { id: string; key: string; name: string; type: '文本' | '段落' | '下拉选项' | '数字'; required: boolean; }
 export interface SessionField { id: string; name: string; description: string; aliases: string; type: string; regex: string; confidence: number; conflict: string; required: boolean; }

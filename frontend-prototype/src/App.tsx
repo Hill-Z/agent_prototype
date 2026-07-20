@@ -5,7 +5,7 @@ import { Switch } from './components/Switch';
 import { ConfigDialogs, type DialogKind } from './features/agent/ConfigDialogs';
 import { loadAgentConfig, loadSavedSnapshot, persistAgentConfig, saveAgentSnapshot } from './features/agent/agent.storage';
 import { createId, type AgentConfig, type WorkspaceTab } from './features/agent/agent.types';
-import { ApiDocsView, LogsView, MonitorView, ReviewView } from './features/agent/WorkspaceViews';
+import { ApiDocsView, LogsView, ReviewView } from './features/agent/WorkspaceViews';
 import { GuardrailSection } from './features/guardrail/GuardrailSection';
 import { guardrailReducer } from './features/guardrail/guardrail.reducer';
 import { loadGuardrailConfig, saveGuardrailConfig } from './features/guardrail/guardrail.storage';
@@ -15,10 +15,13 @@ import { MultimodalInputSection } from './features/runtime/MultimodalInputSectio
 import { ProactiveServiceSection } from './features/runtime/ProactiveServiceSection';
 import { RuntimePreviewPanel } from './features/runtime/RuntimePreviewPanel';
 import { SkillManagementPage } from './features/skills/SkillManagementPage';
+import { ChannelWorkspace } from './features/channels/ChannelWorkspace';
+import { MemoryWorkspace } from './features/memory/MemoryWorkspace';
+import { RealtimeMonitorView, ReportsView } from './features/observability/ObservabilityViews';
 import './styles.css';
 
 const navItems = [Layers3, CircleGauge, Database, BrainCircuit, Archive, ListChecks, Play, FileText, TableProperties, Blocks, UserRoundCheck, Tags, Wrench, GalleryVerticalEnd, Clock3, SlidersHorizontal];
-const tabLabels: Array<[WorkspaceTab, string]> = [['orchestration', '编排'], ['api', 'API 文档'], ['logs', '日志'], ['monitor', '监控图表'], ['review', '人工审核']];
+const tabLabels: Array<[WorkspaceTab, string]> = [['orchestration', '编排'], ['channels', '渠道'], ['memory', '长期记忆'], ['api', 'API 文档'], ['logs', '日志'], ['monitor', '监控'], ['reports', '报表'], ['review', '人工审核']];
 
 function TopHeader() { return <header className="top-header"><div className="brand"><span className="brand-mark" /><strong>Udesk Agent</strong></div><div className="account-area"><Blocks size={18} /><span className="account-avatar" /><div><span>Alex</span><small>管理员</small></div><ChevronDown size={14} /></div></header>; }
 
@@ -123,5 +126,5 @@ export default function App() {
   const [area, setArea] = useState<'agent' | 'skills'>(() => new URLSearchParams(window.location.search).get('view') === 'skills' ? 'skills' : 'agent');
   useEffect(() => persistAgentConfig(agentConfig), [agentConfig]); useEffect(() => saveGuardrailConfig(guardrail), [guardrail]); useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 1800); return () => clearTimeout(timer); }, [toast]);
   const restore = () => { setAgentConfig(loadSavedSnapshot()); setToast('已恢复到最近保存状态'); };
-  return <div className="app-shell"><TopHeader />{area === 'skills' ? <SkillManagementPage onBack={() => setArea('agent')} /> : <><div className="app-body"><GlobalSidebar notify={setToast} openSkills={() => setArea('skills')} /><main className="workbench"><AgentHeader tab={tab} setTab={setTab} config={agentConfig} setConfig={setAgentConfig} notify={setToast} openPublish={() => setDialog('publish')} restore={restore} />{tab === 'orchestration' ? <ResizableWorkspace><ConfigurationPane config={agentConfig} setConfig={setAgentConfig} dialog={setDialog} guardrail={guardrail} dispatch={dispatch} /><RuntimePreviewPanel guardrail={guardrail} responseExperience={agentConfig.responseExperience} conversationBehavior={agentConfig.conversationBehavior} proactiveService={agentConfig.proactiveService} multimodal={agentConfig.multimodal} /></ResizableWorkspace> : tab === 'api' ? <ApiDocsView notify={setToast} /> : tab === 'logs' ? <LogsView /> : tab === 'monitor' ? <MonitorView /> : <ReviewView />}</main></div><ConfigDialogs kind={dialog} config={agentConfig} setConfig={setAgentConfig} close={() => setDialog(null)} notify={setToast} /></>}{toast ? <Toast>{toast}</Toast> : null}</div>;
+  return <div className="app-shell"><TopHeader />{area === 'skills' ? <SkillManagementPage onBack={() => setArea('agent')} /> : <><div className="app-body"><GlobalSidebar notify={setToast} openSkills={() => setArea('skills')} /><main className="workbench"><AgentHeader tab={tab} setTab={setTab} config={agentConfig} setConfig={setAgentConfig} notify={setToast} openPublish={() => setDialog('publish')} restore={restore} />{tab === 'orchestration' ? <ResizableWorkspace><ConfigurationPane config={agentConfig} setConfig={setAgentConfig} dialog={setDialog} guardrail={guardrail} dispatch={dispatch} /><RuntimePreviewPanel guardrail={guardrail} responseExperience={agentConfig.responseExperience} conversationBehavior={agentConfig.conversationBehavior} proactiveService={agentConfig.proactiveService} multimodal={agentConfig.multimodal} /></ResizableWorkspace> : tab === 'channels' ? <ChannelWorkspace /> : tab === 'memory' ? <MemoryWorkspace /> : tab === 'api' ? <ApiDocsView notify={setToast} /> : tab === 'logs' ? <LogsView /> : tab === 'monitor' ? <RealtimeMonitorView /> : tab === 'reports' ? <ReportsView /> : <ReviewView />}</main></div><ConfigDialogs kind={dialog} config={agentConfig} setConfig={setAgentConfig} close={() => setDialog(null)} notify={setToast} /></>}{toast ? <Toast>{toast}</Toast> : null}</div>;
 }

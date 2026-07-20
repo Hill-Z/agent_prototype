@@ -6,5 +6,7 @@
 - `multimodal-demo-script.md`：产品演示步骤、讲解重点和预期页面状态。
 - `conversation.mock.json`：长回复分段、长任务提醒和主动事件通知数据。
 - `conversation-demo-script.md`：对话重规划、多气泡和主动服务演示步骤。
+- `channels.mock.json`：Udesk、网页插件、WhatsApp 与 X 的消息能力、降级策略和行为规则。
+- `memory.mock.json`：跨渠道身份、时序记忆和冲突处理演示数据。
 
 修改 Mock 文案后，Vite 开发环境会自动刷新。字段结构应保持不变。

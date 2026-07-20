@@ -1,0 +1,17 @@
+{
+  "identityKeys": ["统一客户 ID", "手机号", "邮箱", "渠道用户 ID", "CRM external_id", "自定义变量"],
+  "timeline": [
+    { "id": "m1", "type": "偏好", "key": "language", "value": "中文", "channel": "网页插件", "time": "2026-07-20 09:12", "status": "active", "confidence": 0.98 },
+    { "id": "m2", "type": "事实", "key": "company", "value": "ABC Manufacturing", "channel": "WhatsApp", "time": "2026-07-18 16:30", "status": "active", "confidence": 0.96 },
+    { "id": "m3", "type": "任务", "key": "refund_case", "value": "退款审核中 · RF-20260718", "channel": "Udesk IM", "time": "2026-07-18 14:02", "status": "active", "confidence": 1 },
+    { "id": "m4", "type": "事实", "key": "city", "value": "上海", "channel": "X Direct Messages", "time": "2026-07-10 11:24", "status": "conflict", "confidence": 0.72 }
+  ],
+  "conflict": {
+    "key": "city",
+    "current": "杭州",
+    "incoming": "上海",
+    "currentSource": "CRM",
+    "incomingSource": "X Direct Messages",
+    "recommended": "保留 CRM 值"
+  }
+}
