@@ -43,7 +43,6 @@ export interface RuntimeRun {
   attachments: RuntimeAttachment[];
   result: EvaluationResult;
   scenario: RuntimeScenario;
-  source: 'user' | 'proactive';
   replannedFrom?: string;
   completedSteps: number;
   visibleReplyMessages: number;

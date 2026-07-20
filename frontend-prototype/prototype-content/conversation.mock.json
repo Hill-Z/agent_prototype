@@ -9,11 +9,7 @@
   },
   "longTask": {
     "trigger": "生成报表",
-    "waitMessage": "稍等我一下，我正在整理报表数据。",
+    "waitMessage": "稍等我一下，我正在为您处理。",
     "finalMessage": "报表已经生成完成，包含本月咨询量、解决率和平均响应时长。"
-  },
-  "proactiveEvents": {
-    "report.generated": "您刚才申请的报表已经生成，可以查看了。",
-    "refund.completed": "您的退款已经到账，请注意查收。"
   }
 }

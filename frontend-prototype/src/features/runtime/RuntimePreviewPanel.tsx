@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { evaluateGuardrail } from '../guardrail/guardrail.evaluator';
 import type { GuardrailConfig } from '../guardrail/guardrail.types';
 import type { AgentConfig } from '../agent/agent.types';
-import { createProactiveScenario, createRuntimeScenario, getMockAsrTranscript } from './runtime.mock';
+import { createRuntimeScenario, getMockAsrTranscript } from './runtime.mock';
 import type { RuntimeAttachment, RuntimeRun, RuntimeScenario } from './runtime.types';
 
 interface RuntimePreviewProps {
@@ -27,7 +27,6 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, conversatio
   const [transcribing, setTranscribing] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [runs, setRuns] = useState<RuntimeRun[]>([]);
-  const [queuedProactiveEvent, setQueuedProactiveEvent] = useState<'report.generated' | 'refund.completed' | null>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const timers = useRef<number[]>([]);
   const previewUrls = useRef(new Set<string>());
@@ -42,28 +41,6 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, conversatio
     const timer = window.setInterval(() => setRecordingSeconds(value => value + 1), 1000);
     return () => window.clearInterval(timer);
   }, [recording]);
-  const deliverProactive = (eventName: 'report.generated' | 'refund.completed') => {
-    const scenario = createProactiveScenario(eventName);
-    const id = `proactive-${Date.now()}`;
-    setRuns(current => [...current, { id, input: eventName, attachments: [], result: evaluateGuardrail('', guardrail, 'INPUT'), scenario, source: 'proactive', completedSteps: scenario.steps.length, visibleReplyMessages: 1, waitNoticeVisible: false, typingVisible: false, completed: true, cancelled: false }]);
-  };
-  useEffect(() => {
-    const handler = (event: Event) => {
-      if (!proactiveService.asyncCompletionEnabled) return;
-      const eventName = (event as CustomEvent<{ eventName: 'report.generated' | 'refund.completed' }>).detail.eventName;
-      const active = runsRef.current.some(item => !item.completed && !item.cancelled);
-      if (active && proactiveService.suppressDuringActiveConversation) setQueuedProactiveEvent(eventName);
-      else deliverProactive(eventName);
-    };
-    window.addEventListener('uagent:mock-proactive', handler);
-    return () => window.removeEventListener('uagent:mock-proactive', handler);
-  }, [guardrail, proactiveService.asyncCompletionEnabled, proactiveService.suppressDuringActiveConversation]);
-  useEffect(() => {
-    if (!queuedProactiveEvent || runs.some(item => !item.completed && !item.cancelled)) return;
-    deliverProactive(queuedProactiveEvent);
-    setQueuedProactiveEvent(null);
-  }, [queuedProactiveEvent, runs]);
-
   const clear = () => {
     timers.current.forEach(timer => window.clearTimeout(timer));
     timers.current = [];
@@ -71,7 +48,6 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, conversatio
       if (item.previewUrl) { URL.revokeObjectURL(item.previewUrl); previewUrls.current.delete(item.previewUrl); }
     });
     setRuns([]);
-    setQueuedProactiveEvent(null);
   };
   const addFiles = (files: FileList | null, kind: RuntimeAttachment['kind']) => {
     if (!files?.length) return;
@@ -106,13 +82,14 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, conversatio
     const input = value.trim();
     if (!input && !selectedAttachments.length) return;
     const displayInput = input || (selectedAttachments.some(item => item.kind === 'image') ? '请识别这张图片' : '请识别这段语音');
-    const activeRun = [...runsRef.current].reverse().find(item => !item.completed && !item.cancelled && item.source === 'user');
+    const activeRun = [...runsRef.current].reverse().find(item => !item.completed && !item.cancelled);
     const scenarioInput = activeRun && conversationBehavior.replanOnNewMessage ? `${activeRun.input}\n${displayInput}` : displayInput;
     const result = evaluateGuardrail(scenarioInput, guardrail, 'INPUT');
-    const scenario = createRuntimeScenario(scenarioInput, result, guardrail.fallbackReply, selectedAttachments);
+    const baseScenario = createRuntimeScenario(scenarioInput, result, guardrail.fallbackReply, selectedAttachments);
+    const scenario = baseScenario.waitMessage ? { ...baseScenario, waitMessage: proactiveService.longTaskNoticeMessage } : baseScenario;
     const id = `run-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const replyMessages = getReplyMessages(scenario, responseExperience);
-    setRuns(current => [...current.map(item => item.id === activeRun?.id && (conversationBehavior.replanOnNewMessage || conversationBehavior.stopPendingMessages) ? { ...item, cancelled: true, typingVisible: false } : item), { id, input: displayInput, attachments: selectedAttachments, result, scenario, source: 'user', replannedFrom: activeRun?.input, completedSteps: 0, visibleReplyMessages: 0, waitNoticeVisible: false, typingVisible: false, completed: false, cancelled: false }]);
+    setRuns(current => [...current.map(item => item.id === activeRun?.id && (conversationBehavior.replanOnNewMessage || conversationBehavior.stopPendingMessages) ? { ...item, cancelled: true, typingVisible: false } : item), { id, input: displayInput, attachments: selectedAttachments, result, scenario, replannedFrom: activeRun?.input, completedSteps: 0, visibleReplyMessages: 0, waitNoticeVisible: false, typingVisible: false, completed: false, cancelled: false }]);
     setText('');
     setAttachments([]);
     if (responseExperience.humanizedTimingEnabled) timers.current.push(window.setTimeout(() => setRuns(current => current.map(item => item.id === id && !item.cancelled ? { ...item, typingVisible: true } : item)), responseExperience.initialDelayMs));
@@ -132,7 +109,7 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, conversatio
   return <aside className="preview-panel runtime-preview">
     <header><strong>{mode === 'debug' ? '调试过程' : '客户 IM 预览'}</strong><div className="preview-header-actions"><div className="preview-mode-switch" aria-label="预览视图"><button className={mode === 'debug' ? 'active' : ''} onClick={() => setMode('debug')}>调试视图</button><button className={mode === 'customer' ? 'active' : ''} onClick={() => setMode('customer')}>客户视图</button></div><button className="icon-button" onClick={clear} aria-label="清空调试记录"><RotateCcw size={15} /></button></div></header>
     <div className={`preview-content ${mode === 'customer' ? 'customer-preview-content' : ''}`} aria-live="polite">
-      {runs.length === 0 ? <div className="preview-empty"><span>{mode === 'debug' ? <BrainCircuit size={24} /> : <ShieldCheck size={24} />}</span><strong>{mode === 'debug' ? '查看 Agent 如何完成任务' : '以客户身份查看回复'}</strong><p>{mode === 'debug' ? '测试插话重规划、多条回复和主动事件。' : '客户只看到输入状态、独立消息和主动通知。'}</p></div> : runs.map(item => mode === 'debug' ? <DebugRun key={item.id} run={item} responseExperience={responseExperience} onRegenerate={() => run(item.input, item.attachments)} /> : <CustomerRun key={item.id} run={item} responseExperience={responseExperience} />)}
+      {runs.length === 0 ? <div className="preview-empty"><span>{mode === 'debug' ? <BrainCircuit size={24} /> : <ShieldCheck size={24} />}</span><strong>{mode === 'debug' ? '查看 Agent 如何完成任务' : '以客户身份查看回复'}</strong><p>{mode === 'debug' ? '测试插话重规划、多条回复和长任务等待提醒。' : '客户只看到输入状态和独立消息。'}</p></div> : runs.map(item => mode === 'debug' ? <DebugRun key={item.id} run={item} responseExperience={responseExperience} onRegenerate={() => run(item.input, item.attachments)} /> : <CustomerRun key={item.id} run={item} responseExperience={responseExperience} />)}
     </div>
     <div className="chat-composer multimodal-composer">
       {attachments.length ? <div className="composer-attachments">{attachments.map(item => <AttachmentChip key={item.id} attachment={item} onRemove={() => {
@@ -179,11 +156,11 @@ function DebugRun({ run, responseExperience, onRegenerate }: { run: RuntimeRun; 
   const totalDurationMs = run.scenario.steps.reduce((total, step) => total + step.durationMs, 0);
   const replyMessages = getReplyMessages(run.scenario, responseExperience);
   const copyReply = async () => { await navigator.clipboard?.writeText(run.scenario.reply); setCopied(true); window.setTimeout(() => setCopied(false), 1200); };
-  return <div className="preview-run debug-run">{run.source === 'user' ? <div className="user-message-group"><MessageAttachments attachments={run.attachments} /><div className="chat-message user">{run.input}</div></div> : <div className="proactive-event-label">业务事件 · {run.input}</div>}{run.cancelled ? <div className="compact-runtime-status cancelled" role="status"><RefreshCw size={15} /><strong>收到补充消息，已停止并重新规划</strong></div> : <><div className={`compact-runtime-status ${run.completed ? 'completed' : 'running'}`} role="status">{run.completed ? <CheckCircle2 size={15} /> : <LoaderCircle size={15} />}<strong>{run.completed ? `已处理 ${(totalDurationMs / 1000).toFixed(1)}s` : currentStep.title}</strong>{!run.completed ? <span className="status-pulse" /> : null}</div>{run.replannedFrom ? <div className="replan-context">已合并上一条消息：{run.replannedFrom}</div> : null}{run.completed && replyMessages.length > 1 ? <div className="message-plan-summary"><strong>回复规划</strong><span>已生成 {replyMessages.length} 条消息</span></div> : null}{run.completed && run.scenario.recognition ? <details className="recognition-result"><summary><span><Paperclip size={14} />{run.scenario.recognition.title}</span><small>查看识别结果</small></summary><div><strong>{run.scenario.recognition.summary}</strong><label>{run.scenario.recognition.detailLabel}</label><pre>{run.scenario.recognition.detail}</pre><footer>{run.scenario.recognition.meta.map(item => <span key={item}>{item}</span>)}</footer></div></details> : null}{run.completed ? <div className="agent-response-wrap"><div className="debug-message-stack">{replyMessages.map((message, index) => <div className="chat-message agent" key={index}>{message}</div>)}</div><div className="response-hover-actions"><button onClick={copyReply} aria-label="复制回复" title="复制回复">{copied ? <Check size={14} /> : <Copy size={14} />}</button><button aria-label="Agent 日志" title="Agent 日志"><FileClock size={14} /><span>Agent 日志</span></button>{run.source === 'user' ? <button onClick={onRegenerate} aria-label="重新运行" title="重新运行"><RefreshCw size={14} /></button> : null}</div></div> : null}</>}</div>;
+  return <div className="preview-run debug-run"><div className="user-message-group"><MessageAttachments attachments={run.attachments} /><div className="chat-message user">{run.input}</div></div>{run.cancelled ? <div className="compact-runtime-status cancelled" role="status"><RefreshCw size={15} /><strong>收到补充消息，已停止并重新规划</strong></div> : <><div className={`compact-runtime-status ${run.completed ? 'completed' : 'running'}`} role="status">{run.completed ? <CheckCircle2 size={15} /> : <LoaderCircle size={15} />}<strong>{run.completed ? `已处理 ${(totalDurationMs / 1000).toFixed(1)}s` : currentStep.title}</strong>{!run.completed ? <span className="status-pulse" /> : null}</div>{run.replannedFrom ? <div className="replan-context">已合并上一条消息：{run.replannedFrom}</div> : null}{run.completed && replyMessages.length > 1 ? <div className="message-plan-summary"><strong>回复规划</strong><span>已生成 {replyMessages.length} 条消息</span></div> : null}{run.completed && run.scenario.recognition ? <details className="recognition-result"><summary><span><Paperclip size={14} />{run.scenario.recognition.title}</span><small>查看识别结果</small></summary><div><strong>{run.scenario.recognition.summary}</strong><label>{run.scenario.recognition.detailLabel}</label><pre>{run.scenario.recognition.detail}</pre><footer>{run.scenario.recognition.meta.map(item => <span key={item}>{item}</span>)}</footer></div></details> : null}{run.completed ? <div className="agent-response-wrap"><div className="debug-message-stack">{replyMessages.map((message, index) => <div className="chat-message agent" key={index}>{message}</div>)}</div><div className="response-hover-actions"><button onClick={copyReply} aria-label="复制回复" title="复制回复">{copied ? <Check size={14} /> : <Copy size={14} />}</button><button aria-label="Agent 日志" title="Agent 日志"><FileClock size={14} /><span>Agent 日志</span></button><button onClick={onRegenerate} aria-label="重新运行" title="重新运行"><RefreshCw size={14} /></button></div></div> : null}</>}</div>;
 }
 
 function CustomerRun({ run, responseExperience }: { run: RuntimeRun; responseExperience: AgentConfig['responseExperience'] }) {
   const streamedLength = Math.max(1, Math.floor(run.scenario.reply.length * run.completedSteps / run.scenario.steps.length));
   const replyMessages = getReplyMessages(run.scenario, responseExperience);
-  return <div className={`preview-run customer-run ${run.source === 'proactive' ? 'proactive-run' : ''}`}>{run.source === 'user' ? <div className="user-message-group"><MessageAttachments attachments={run.attachments} /><div className="chat-message user">{run.input}</div></div> : null}{run.cancelled ? null : <>{run.waitNoticeVisible && run.scenario.waitMessage ? <div className="chat-message agent wait-message">{run.scenario.waitMessage}</div> : null}{run.completed ? <>{replyMessages.slice(0, run.visibleReplyMessages).map((message, index) => <div className="chat-message agent" key={index}>{message}</div>)}{run.visibleReplyMessages < replyMessages.length && responseExperience.humanizedTimingEnabled ? <div className={`typing-indicator ${responseExperience.typingStyle}`} aria-label="对方正在输入"><i /><i /><i /><span>正在输入</span></div> : null}</> : responseExperience.humanizedTimingEnabled ? run.typingVisible ? <div className={`typing-indicator ${responseExperience.typingStyle}`} aria-label="对方正在输入"><i /><i /><i /><span>正在输入</span></div> : null : <div className="chat-message agent streaming-message">{run.scenario.reply.slice(0, streamedLength)}<b /></div>}</>}</div>;
+  return <div className="preview-run customer-run"><div className="user-message-group"><MessageAttachments attachments={run.attachments} /><div className="chat-message user">{run.input}</div></div>{run.cancelled ? null : <>{run.waitNoticeVisible && run.scenario.waitMessage ? <div className="chat-message agent wait-message">{run.scenario.waitMessage}</div> : null}{run.completed ? <>{replyMessages.slice(0, run.visibleReplyMessages).map((message, index) => <div className="chat-message agent" key={index}>{message}</div>)}{run.visibleReplyMessages < replyMessages.length && responseExperience.humanizedTimingEnabled ? <div className={`typing-indicator ${responseExperience.typingStyle}`} aria-label="对方正在输入"><i /><i /><i /><span>正在输入</span></div> : null}</> : responseExperience.humanizedTimingEnabled ? run.typingVisible ? <div className={`typing-indicator ${responseExperience.typingStyle}`} aria-label="对方正在输入"><i /><i /><i /><span>正在输入</span></div> : null : <div className="chat-message agent streaming-message">{run.scenario.reply.slice(0, streamedLength)}<b /></div>}</>}</div>;
 }

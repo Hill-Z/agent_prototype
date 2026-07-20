@@ -7,11 +7,6 @@ const step = (id: string, kind: RuntimeStep['kind'], title: string, detail: stri
 
 export const getMockAsrTranscript = () => multimodalMock.audio.recognition.detail;
 
-export function createProactiveScenario(eventName: keyof typeof conversationMock.proactiveEvents): RuntimeScenario {
-  const reply = conversationMock.proactiveEvents[eventName];
-  return { id: `proactive-${eventName}`, reply, messages: [reply], steps: [step('event', 'analysis', '接收业务事件', `命中主动服务规则：${eventName}`, 120), step('notify', 'generation', '生成主动通知', '根据业务事实生成渠道无关消息', 180)] };
-}
-
 export function createRuntimeScenario(input: string, result: EvaluationResult, fallbackReply: string, attachments: RuntimeAttachment[] = []): RuntimeScenario {
   const safeInput = result.transformedText;
   const images = attachments.filter(item => item.kind === 'image').length;
