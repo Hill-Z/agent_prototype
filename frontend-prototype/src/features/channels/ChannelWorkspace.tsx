@@ -1,40 +1,79 @@
-import { Braces, Check, ChevronRight, CircleAlert, Copy, Image, Link2, MessageSquareText, Plus, RefreshCw, Send, Settings2, ShieldCheck, Smartphone, Webhook } from 'lucide-react';
+import { ChevronRight, CircleAlert, Copy, Link2, MessageSquareText, Plus, RefreshCw, Send, Settings2, Smartphone, Webhook } from 'lucide-react';
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { Modal } from '../../components/Modal';
 import { Switch } from '../../components/Switch';
 import channelData from '../../../prototype-content/channels.mock.json';
 
-type Channel = typeof channelData.channels[number];
+type ChannelStatus = 'connected' | 'authorization';
 type WorkspaceMode = 'capabilities' | 'rules' | 'context';
+type DialogKind = 'add' | 'settings' | 'fallback' | 'rule' | null;
 
-const statusText: Record<Channel['status'], string> = { connected: '已连接', authorization: '待授权' };
+interface Channel {
+  id: string;
+  name: string;
+  status: ChannelStatus;
+  account: string;
+  inbound: string[];
+  outbound: string[];
+  nativeFormats: string[];
+  unsupported: string[];
+  assetInput: string;
+  fallback: string;
+}
 
-export function ChannelWorkspace() {
+interface ChannelRule {
+  id: string;
+  name: string;
+  condition: string;
+  action: string;
+  enabled: boolean;
+}
+
+const statusText: Record<ChannelStatus, string> = { connected: '已连接', authorization: '待授权' };
+
+export function ChannelWorkspace({ notify }: { notify: (message: string) => void }) {
+  const [channels, setChannels] = useState<Channel[]>(() => channelData.channels as Channel[]);
   const [selectedId, setSelectedId] = useState('whatsapp');
   const [mode, setMode] = useState<WorkspaceMode>('capabilities');
   const [previewMode, setPreviewMode] = useState<'native' | 'fallback'>('native');
-  const [rules, setRules] = useState(channelData.rules);
-  const selected = useMemo(() => channelData.channels.find(item => item.id === selectedId) ?? channelData.channels[0], [selectedId]);
+  const [rules, setRules] = useState<ChannelRule[]>(() => channelData.rules as ChannelRule[]);
+  const [dialog, setDialog] = useState<DialogKind>(null);
+  const [testing, setTesting] = useState(false);
+  const selected = useMemo(() => channels.find(item => item.id === selectedId) ?? channels[0], [channels, selectedId]);
+
+  const updateSelected = (patch: Partial<Channel>) => setChannels(current => current.map(channel => channel.id === selected.id ? { ...channel, ...patch } : channel));
+  const testConnection = () => {
+    setTesting(true);
+    window.setTimeout(() => {
+      setTesting(false);
+      notify(selected.status === 'connected' ? `${selected.name} 连接正常` : `${selected.name} 尚未完成授权`);
+    }, 350);
+  };
 
   return <div className="channel-workspace">
     <aside className="channel-list-panel">
-      <header><div><strong>渠道</strong><small>{channelData.channels.filter(item => item.status === 'connected').length} 个已连接</small></div><button aria-label="添加渠道"><Plus size={16} /></button></header>
-      <div className="channel-list">{channelData.channels.map(channel => <button key={channel.id} className={channel.id === selected.id ? 'active' : ''} onClick={() => setSelectedId(channel.id)}>
+      <header><strong>渠道</strong><button aria-label="添加渠道" onClick={() => setDialog('add')}><Plus size={16} /></button></header>
+      <div className="channel-list">{channels.map(channel => <button key={channel.id} className={channel.id === selected.id ? 'active' : ''} onClick={() => setSelectedId(channel.id)}>
         <span className={`channel-logo ${channel.id}`}><ChannelIcon id={channel.id} /></span>
         <span><strong>{channel.name}</strong><small>{channel.account}</small></span>
         <em className={channel.status}>{statusText[channel.status]}</em><ChevronRight size={14} />
       </button>)}</div>
-      <div className="channel-model-note"><Braces size={16} /><span><strong>统一消息模型</strong><small>渠道原始消息先转换为文本、资产和动作，再进入 Agent。</small></span></div>
     </aside>
 
     <main className="channel-detail-panel">
-      <header className="channel-detail-header"><div><span className={`channel-logo ${selected.id}`}><ChannelIcon id={selected.id} /></span><div><h1>{selected.name}</h1><p>{selected.account} · {statusText[selected.status]}</p></div></div><div className="channel-header-actions"><button className="secondary-button"><RefreshCw size={14} />测试连接</button><button className="primary-button"><Settings2 size={14} />渠道设置</button></div></header>
+      <header className="channel-detail-header"><div><span className={`channel-logo ${selected.id}`}><ChannelIcon id={selected.id} /></span><div><h1>{selected.name}</h1><p>{selected.account}</p></div></div><div className="channel-header-actions"><button className="secondary-button" onClick={testConnection} disabled={testing}><RefreshCw size={14} className={testing ? 'spin' : ''} />{testing ? '检测中' : '测试连接'}</button><button className="primary-button" onClick={() => setDialog('settings')}><Settings2 size={14} />渠道设置</button></div></header>
       <nav className="channel-subnav">{([['capabilities', '消息能力'], ['rules', '行为规则'], ['context', '上下文变量']] as const).map(([value, label]) => <button key={value} className={mode === value ? 'active' : ''} onClick={() => setMode(value)}>{label}</button>)}</nav>
       <div className="channel-detail-scroll">
-        {mode === 'capabilities' ? <CapabilityView channel={selected} previewMode={previewMode} setPreviewMode={setPreviewMode} /> : null}
-        {mode === 'rules' ? <RulesView rules={rules} setRules={setRules} channelName={selected.name} /> : null}
-        {mode === 'context' ? <ContextView channelName={selected.name} /> : null}
+        {mode === 'capabilities' ? <CapabilityView channel={selected} previewMode={previewMode} setPreviewMode={setPreviewMode} editFallback={() => setDialog('fallback')} notify={notify} /> : null}
+        {mode === 'rules' ? <RulesView rules={rules} setRules={setRules} createRule={() => setDialog('rule')} notify={notify} /> : null}
+        {mode === 'context' ? <ContextView /> : null}
       </div>
     </main>
+
+    {dialog === 'add' ? <AddChannelDialog close={() => setDialog(null)} add={channel => { setChannels(current => [...current, channel]); setSelectedId(channel.id); setDialog(null); notify('渠道已添加'); }} /> : null}
+    {dialog === 'settings' ? <ChannelSettingsDialog channel={selected} close={() => setDialog(null)} save={patch => { updateSelected(patch); setDialog(null); notify('渠道设置已保存'); }} /> : null}
+    {dialog === 'fallback' ? <FallbackDialog value={selected.fallback} close={() => setDialog(null)} save={fallback => { updateSelected({ fallback }); setDialog(null); notify('降级策略已保存'); }} /> : null}
+    {dialog === 'rule' ? <RuleDialog close={() => setDialog(null)} save={rule => { setRules(current => [...current, rule]); setDialog(null); notify('渠道规则已创建'); }} /> : null}
   </div>;
 }
 
@@ -45,20 +84,24 @@ function ChannelIcon({ id }: { id: string }) {
   return <Webhook size={17} />;
 }
 
-function CapabilityView({ channel, previewMode, setPreviewMode }: { channel: Channel; previewMode: 'native' | 'fallback'; setPreviewMode: (value: 'native' | 'fallback') => void }) {
+function CapabilityView({ channel, previewMode, setPreviewMode, editFallback, notify }: { channel: Channel; previewMode: 'native' | 'fallback'; setPreviewMode: (value: 'native' | 'fallback') => void; editFallback: () => void; notify: (message: string) => void }) {
+  const copyPreview = () => {
+    const payload = JSON.stringify({ channel: channel.id, mode: previewMode, message: '订单 A20260720001 正在配送中' }, null, 2);
+    void navigator.clipboard?.writeText(payload).catch(() => undefined);
+    notify('消息 JSON 已复制');
+  };
   return <div className="channel-capability-layout">
     <section className="channel-capability-main">
-      <div className="channel-section-heading"><div><h2>消息能力</h2><p>由渠道原生接口决定，不支持的内容按当前降级策略发送。</p></div><span className="capability-source">能力档案 · 2026-07-20</span></div>
+      <div className="channel-section-heading"><h2>消息能力</h2></div>
       <CapabilityGroup title="接收" items={channel.inbound} />
       <CapabilityGroup title="发送" items={channel.outbound} />
       <CapabilityGroup title="原生结构" items={channel.nativeFormats} tone="native" />
-      <div className="channel-contract-row"><div><Image size={17} /><span><strong>媒体进入 Agent</strong><small>{channel.assetInput}</small></span></div><div><ShieldCheck size={17} /><span><strong>不支持</strong><small>{channel.unsupported.join('、')}</small></span></div></div>
-      <div className="fallback-policy"><div><strong>降级策略</strong><p>原生结构发送失败或渠道不支持时执行。</p></div><span>{channel.fallback}</span><button>编辑</button></div>
+      <div className="fallback-policy"><strong>降级策略</strong><span>{channel.fallback}</span><button onClick={editFallback}>编辑</button></div>
     </section>
     <aside className="channel-message-preview">
       <header><strong>消息预览</strong><div><button className={previewMode === 'native' ? 'active' : ''} onClick={() => setPreviewMode('native')}>原生</button><button className={previewMode === 'fallback' ? 'active' : ''} onClick={() => setPreviewMode('fallback')}>降级</button></div></header>
-      <div className="channel-preview-body"><div className="preview-customer-message">查询订单 A20260720001 的物流</div>{previewMode === 'native' ? <NativePreview channel={channel} /> : <FallbackPreview channel={channel} />}</div>
-      <footer><span><Check size={13} />预计可发送</span><button aria-label="复制消息 JSON"><Copy size={15} /></button><button aria-label="发送测试消息"><Send size={15} /></button></footer>
+      <div className="channel-preview-body"><div className="preview-customer-message">查询订单 A20260720001 的物流</div>{previewMode === 'native' ? <NativePreview channel={channel} notify={notify} /> : <FallbackPreview notify={notify} />}</div>
+      <footer><button aria-label="复制消息 JSON" onClick={copyPreview}><Copy size={15} /></button><button aria-label="发送测试消息" onClick={() => notify(`测试消息已发送到 ${channel.name}`)}><Send size={15} /></button></footer>
     </aside>
   </div>;
 }
@@ -67,21 +110,21 @@ function CapabilityGroup({ title, items, tone = 'default' }: { title: string; it
   return <div className="capability-matrix-row"><strong>{title}</strong><div>{items.map(item => <span className={tone} key={item}>{item}</span>)}</div></div>;
 }
 
-function NativePreview({ channel }: { channel: Channel }) {
-  if (channel.id === 'whatsapp') return <div className="wa-order-preview"><small>订单状态</small><strong>A20260720001</strong><p>您的包裹已到达本地配送站，预计今天 18:00 前送达。</p><button>查看物流</button><button>联系人工</button></div>;
-  if (channel.id === 'udesk_web') return <div className="web-order-preview"><div><small>配送中</small><strong>订单 A20260720001</strong></div><p>预计今天 18:00 前送达</p><div><button>查看物流</button><button>申请售后</button></div></div>;
-  return <div className="plain-channel-preview"><p>订单 A20260720001 正在配送中。</p><p>预计今天 18:00 前送达。</p><a>查看物流详情</a></div>;
+function NativePreview({ channel, notify }: { channel: Channel; notify: (message: string) => void }) {
+  if (channel.id === 'whatsapp') return <div className="wa-order-preview"><small>订单状态</small><strong>A20260720001</strong><p>您的包裹已到达本地配送站，预计今天 18:00 前送达。</p><button onClick={() => notify('已打开物流详情')}>查看物流</button><button onClick={() => notify('已发起人工服务')}>联系人工</button></div>;
+  if (channel.id === 'udesk_web') return <div className="web-order-preview"><div><small>配送中</small><strong>订单 A20260720001</strong></div><p>预计今天 18:00 前送达</p><div><button onClick={() => notify('已打开物流详情')}>查看物流</button><button onClick={() => notify('已进入售后申请')}>申请售后</button></div></div>;
+  return <div className="plain-channel-preview"><p>订单 A20260720001 正在配送中。</p><p>预计今天 18:00 前送达。</p><button className="text-link" onClick={() => notify('已打开物流详情')}>查看物流详情</button></div>;
 }
 
-function FallbackPreview({ channel }: { channel: Channel }) {
-  return <div className="plain-channel-preview fallback"><span><CircleAlert size={14} />已从结构化消息降级</span><p>订单号：A20260720001<br />状态：配送中<br />预计送达：今天 18:00</p><a><Link2 size={13} />查看物流详情</a><small>{channel.fallback}</small></div>;
+function FallbackPreview({ notify }: { notify: (message: string) => void }) {
+  return <div className="plain-channel-preview fallback"><span><CircleAlert size={14} />已降级为文本消息</span><p>订单号：A20260720001<br />状态：配送中<br />预计送达：今天 18:00</p><button className="text-link" onClick={() => notify('已打开物流详情')}><Link2 size={13} />查看物流详情</button></div>;
 }
 
-function RulesView({ rules, setRules, channelName }: { rules: typeof channelData.rules; setRules: Dispatch<SetStateAction<typeof channelData.rules>>; channelName: string }) {
-  return <section className="channel-rules-view"><div className="channel-section-heading"><div><h2>渠道行为规则</h2><p>按渠道、账号、客户和会话状态改变 Prompt、Skill、Tool 与消息格式。</p></div><button className="primary-button"><Plus size={14} />新建规则</button></div><div className="channel-rule-table"><div className="channel-rule-head"><span>规则</span><span>条件</span><span>执行动作</span><span>状态</span></div>{rules.map(rule => <div className="channel-rule-row" key={rule.id}><span><strong>{rule.name}</strong><small>{rule.id}</small></span><span>{rule.condition}</span><span>{rule.action}</span><Switch checked={rule.enabled} onChange={enabled => setRules(current => current.map(item => item.id === rule.id ? { ...item, enabled } : item))} label={`启用${rule.name}`} /></div>)}</div><div className="rule-test-strip"><span><Braces size={16} /><strong>当前渠道测试上下文</strong><small>{channelName} · 首次会话 · 中文 · 未转人工</small></span><button className="secondary-button">运行规则测试</button></div></section>;
+function RulesView({ rules, setRules, createRule, notify }: { rules: ChannelRule[]; setRules: Dispatch<SetStateAction<ChannelRule[]>>; createRule: () => void; notify: (message: string) => void }) {
+  return <section className="channel-rules-view"><div className="channel-section-heading"><h2>渠道行为规则</h2><button className="primary-button" onClick={createRule}><Plus size={14} />新建规则</button></div><div className="channel-rule-table"><div className="channel-rule-head"><span>规则</span><span>条件</span><span>执行动作</span><span>状态</span></div>{rules.map(rule => <div className="channel-rule-row" key={rule.id}><span><strong>{rule.name}</strong></span><span>{rule.condition}</span><span>{rule.action}</span><Switch checked={rule.enabled} onChange={enabled => setRules(current => current.map(item => item.id === rule.id ? { ...item, enabled } : item))} label={`启用${rule.name}`} /></div>)}</div><div className="rule-test-strip"><strong>规则测试</strong><button className="secondary-button" onClick={() => notify('规则测试通过')}>运行测试</button></div></section>;
 }
 
-function ContextView({ channelName }: { channelName: string }) {
+function ContextView() {
   const [visibility, setVisibility] = useState<Record<string, boolean>>({ 'channel.type': true, 'channel.capabilities': true, 'user.channel_user_id': false, 'conversation.consent_status': true });
   const rows = [
     ['channel.type', '渠道类型', 'Prompt、Tool'],
@@ -89,5 +132,29 @@ function ContextView({ channelName }: { channelName: string }) {
     ['user.channel_user_id', '渠道用户标识', 'Tool、Memory'],
     ['conversation.consent_status', '隐私授权状态', 'Prompt、Tool']
   ];
-  return <section className="channel-context-view"><div className="channel-section-heading"><div><h2>上下文变量</h2><p>只注入业务使用的变量，避免渠道原始 Payload 和用户标识无条件进入 Prompt。</p></div><span className="capability-source">当前渠道 · {channelName}</span></div><div className="context-variable-table"><div className="context-variable-head"><span>变量</span><span>业务含义</span><span>允许使用范围</span><span>启用</span></div>{rows.map(([key, meaning, scope]) => <div className="context-variable-row" key={key}><code>{key}</code><span>{meaning}</span><span>{scope}</span><Switch checked={visibility[key]} onChange={enabled => setVisibility(current => ({ ...current, [key]: enabled }))} label={`启用${key}`} /></div>)}</div><div className="context-security-note"><ShieldCheck size={17} /><span><strong>字段级可见性</strong><p>每个变量还需分别控制 Prompt、Tool、Memory、日志和脱敏策略；Demo 展示启用入口。</p></span></div></section>;
+  return <section className="channel-context-view"><div className="channel-section-heading"><h2>上下文变量</h2></div><div className="context-variable-table"><div className="context-variable-head"><span>变量</span><span>业务含义</span><span>允许使用范围</span><span>启用</span></div>{rows.map(([key, meaning, scope]) => <div className="context-variable-row" key={key}><code>{key}</code><span>{meaning}</span><span>{scope}</span><Switch checked={visibility[key]} onChange={enabled => setVisibility(current => ({ ...current, [key]: enabled }))} label={`启用${key}`} /></div>)}</div></section>;
+}
+
+function AddChannelDialog({ close, add }: { close: () => void; add: (channel: Channel) => void }) {
+  const [name, setName] = useState('');
+  const [account, setAccount] = useState('');
+  return <Modal title="添加渠道" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" disabled={!name.trim() || !account.trim()} onClick={() => add({ id: `custom_${Date.now()}`, name: name.trim(), account: account.trim(), status: 'connected', inbound: ['文本', '图片'], outbound: ['文本', '图片'], nativeFormats: ['普通消息'], unsupported: [], assetInput: 'URL → asset_id', fallback: '纯文本 + 链接' })}>添加</button></>}><div className="form-grid"><label>渠道名称<input aria-label="渠道名称" value={name} onChange={event => setName(event.target.value)} /></label><label>账号<input aria-label="渠道账号" value={account} onChange={event => setAccount(event.target.value)} /></label></div></Modal>;
+}
+
+function ChannelSettingsDialog({ channel, close, save }: { channel: Channel; close: () => void; save: (patch: Partial<Channel>) => void }) {
+  const [account, setAccount] = useState(channel.account);
+  const [status, setStatus] = useState<ChannelStatus>(channel.status);
+  return <Modal title="渠道设置" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" onClick={() => save({ account, status })}>保存</button></>}><div className="form-grid"><label>账号<input aria-label="渠道设置账号" value={account} onChange={event => setAccount(event.target.value)} /></label><label>连接状态<select aria-label="渠道连接状态" value={status} onChange={event => setStatus(event.target.value as ChannelStatus)}><option value="connected">已连接</option><option value="authorization">待授权</option></select></label></div></Modal>;
+}
+
+function FallbackDialog({ value, close, save }: { value: string; close: () => void; save: (value: string) => void }) {
+  const [fallback, setFallback] = useState(value);
+  return <Modal title="编辑降级策略" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" disabled={!fallback.trim()} onClick={() => save(fallback.trim())}>保存</button></>}><label className="stacked-field">降级格式<select aria-label="降级格式" value={fallback} onChange={event => setFallback(event.target.value)}><option>纯文本 + 链接</option><option>纯文本字段 + 操作链接</option><option>编号选项或模板文本</option><option>仅纯文本</option></select></label></Modal>;
+}
+
+function RuleDialog({ close, save }: { close: () => void; save: (rule: ChannelRule) => void }) {
+  const [name, setName] = useState('');
+  const [condition, setCondition] = useState('');
+  const [action, setAction] = useState('');
+  return <Modal title="新建渠道规则" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" disabled={!name.trim() || !condition.trim() || !action.trim()} onClick={() => save({ id: `rule-${Date.now()}`, name: name.trim(), condition: condition.trim(), action: action.trim(), enabled: true })}>创建</button></>}><div className="form-grid"><label>规则名称<input aria-label="规则名称" value={name} onChange={event => setName(event.target.value)} /></label><label>生效条件<input aria-label="规则生效条件" value={condition} onChange={event => setCondition(event.target.value)} /></label></div><label className="stacked-field">执行动作<input aria-label="规则执行动作" value={action} onChange={event => setAction(event.target.value)} /></label></Modal>;
 }

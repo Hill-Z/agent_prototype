@@ -28,11 +28,10 @@ describe('advanced agent configuration prototype', () => {
     await user.click(screen.getByRole('button', { name: '渠道' }));
     expect(screen.getByRole('heading', { name: 'WhatsApp' })).toBeInTheDocument();
     expect(screen.getByText('Reply Button')).toBeInTheDocument();
-    expect(screen.getByText('media_id / URL → asset_id')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '降级' }));
-    expect(screen.getByText('已从结构化消息降级')).toBeInTheDocument();
-    expect(screen.getAllByText('编号选项或模板文本')).toHaveLength(2);
+    expect(screen.getByText('已降级为文本消息')).toBeInTheDocument();
+    expect(screen.getAllByText('编号选项或模板文本')).toHaveLength(1);
 
     await user.click(screen.getByRole('button', { name: '行为规则' }));
     expect(screen.getByText('WhatsApp 首次会话隐私告知')).toBeInTheDocument();
@@ -44,6 +43,32 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getByRole('checkbox', { name: '启用channel.capabilities' })).toBeChecked();
   });
 
+  it('makes channel setup, fallback, preview and rule actions usable', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '渠道' }));
+
+    await user.click(screen.getByRole('button', { name: '渠道设置' }));
+    await user.clear(screen.getByLabelText('渠道设置账号'));
+    await user.type(screen.getByLabelText('渠道设置账号'), '+65 9000 0000');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+    expect(screen.getAllByText('+65 9000 0000')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: '编辑' }));
+    await user.selectOptions(screen.getByLabelText('降级格式'), '仅纯文本');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+    expect(screen.getByText('仅纯文本')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '发送测试消息' }));
+    await user.click(screen.getByRole('button', { name: '行为规则' }));
+    await user.click(screen.getByRole('button', { name: '新建规则' }));
+    await user.type(screen.getByLabelText('规则名称'), '短消息规则');
+    await user.type(screen.getByLabelText('规则生效条件'), '渠道 = WhatsApp');
+    await user.type(screen.getByLabelText('规则执行动作'), '限制回复长度');
+    await user.click(screen.getByRole('button', { name: '创建' }));
+    expect(screen.getByText('短消息规则')).toBeInTheDocument();
+  });
+
   it('manages cross-channel identity, temporal memory and a conflict decision', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -53,7 +78,18 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getByText('退款审核中 · RF-20260718')).toBeInTheDocument();
     expect(screen.getByText('待解决冲突')).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText('主标识'), 'CRM external_id');
-    expect(screen.getAllByText(/CRM external_id/).length).toBeGreaterThan(0);
+    expect(screen.getByLabelText('主标识')).toHaveValue('CRM external_id');
+    await user.click(screen.getByRole('button', { name: '身份映射' }));
+    expect(screen.getByRole('dialog', { name: '身份映射' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '完成' }));
+    await user.click(screen.getByRole('button', { name: '偏好' }));
+    expect(screen.getByText('中文')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '人工添加' }));
+    await user.selectOptions(screen.getByLabelText('记忆类型'), '偏好');
+    await user.type(screen.getByLabelText('记忆 Key'), 'vip_level');
+    await user.type(screen.getByLabelText('记忆值'), 'gold');
+    await user.click(screen.getByRole('button', { name: '添加' }));
+    expect(screen.getByText('gold')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '采用推荐结果' }));
     expect(screen.getByText('冲突已解决')).toBeInTheDocument();
   });
