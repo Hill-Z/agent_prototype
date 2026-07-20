@@ -8,6 +8,7 @@ function withDefaults(value: Partial<AgentConfig> | null): AgentConfig {
   return {
     ...defaults,
     ...value,
+    longMemory: { ...defaults.longMemory, ...value?.longMemory },
     responseExperience: { ...defaults.responseExperience, ...value?.responseExperience },
     conversationBehavior: { ...defaults.conversationBehavior, ...value?.conversationBehavior },
     proactiveService: { ...defaults.proactiveService, ...value?.proactiveService },

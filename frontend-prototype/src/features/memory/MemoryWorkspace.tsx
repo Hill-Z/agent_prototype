@@ -2,6 +2,7 @@ import { AlertTriangle, Check, Clock3, GitMerge, KeyRound, Plus, ShieldCheck, Tr
 import { useMemo, useState } from 'react';
 import { Modal } from '../../components/Modal';
 import memoryData from '../../../prototype-content/memory.mock.json';
+import type { LongMemoryConfig } from '../agent/agent.types';
 
 type MemoryFilter = '全部' | '事实' | '偏好' | '任务' | '状态';
 type MemoryStatus = 'active' | 'conflict';
@@ -17,15 +18,15 @@ interface MemoryRecord {
   confidence: number;
 }
 
-export function MemoryWorkspace({ notify }: { notify: (message: string) => void }) {
-  const [identityKey, setIdentityKey] = useState('统一客户 ID');
-  const [backupKeys, setBackupKeys] = useState<string[]>(['手机号']);
+export function MemoryWorkspace({ config, update, notify }: { config: LongMemoryConfig; update: (patch: Partial<LongMemoryConfig>) => void; notify: (message: string) => void }) {
+  const identityKey = config.identityKey;
+  const backupKeys = config.backupKeys;
   const [records, setRecords] = useState<MemoryRecord[]>(() => memoryData.timeline as MemoryRecord[]);
   const [filter, setFilter] = useState<MemoryFilter>('全部');
   const [dialog, setDialog] = useState<'backup' | 'mapping' | 'add' | null>(null);
   const [conflictOpen, setConflictOpen] = useState(true);
   const [resolved, setResolved] = useState(false);
-  const [forgetPolicy, setForgetPolicy] = useState('按记忆类型');
+  const setMemory = (patch: Partial<LongMemoryConfig>) => update(patch);
   const visibleRecords = useMemo(() => records.filter(item => filter === '全部' || item.type === filter || (filter === '状态' && item.status === 'conflict')), [filter, records]);
 
   const resolveConflict = () => {
@@ -40,20 +41,20 @@ export function MemoryWorkspace({ notify }: { notify: (message: string) => void 
       <aside className="memory-config-panel">
         <section>
           <div className="memory-section-title"><KeyRound size={17} /><strong>客户标识 Key</strong></div>
-          <label>主标识<select value={identityKey} onChange={event => setIdentityKey(event.target.value)}>{memoryData.identityKeys.map(item => <option key={item}>{item}</option>)}</select></label>
-          {backupKeys.length ? <div className="backup-key-list"><strong>备用标识</strong>{backupKeys.map(key => <span key={key}>{key}<button aria-label={`删除备用标识${key}`} onClick={() => setBackupKeys(current => current.filter(item => item !== key))}><X size={13} /></button></span>)}</div> : null}
+          <label>主标识<select value={identityKey} onChange={event => setMemory({ identityKey: event.target.value })}>{memoryData.identityKeys.map(item => <option key={item}>{item}</option>)}</select></label>
+          {backupKeys.length ? <div className="backup-key-list"><strong>备用标识</strong>{backupKeys.map(key => <span key={key}>{key}<button aria-label={`删除备用标识${key}`} onClick={() => setMemory({ backupKeys: backupKeys.filter(item => item !== key) })}><X size={13} /></button></span>)}</div> : null}
           <button className="memory-add-key" onClick={() => setDialog('backup')}><Plus size={14} />添加备用标识</button>
         </section>
         <section>
           <div className="memory-section-title"><Clock3 size={17} /><strong>抽取与遗忘</strong></div>
-          <label>抽取时机<select aria-label="记忆抽取时机"><option>会话结束 + 业务事件</option><option>仅会话结束</option><option>实时抽取</option></select></label>
-          <label>遗忘策略<select value={forgetPolicy} onChange={event => setForgetPolicy(event.target.value)}><option>按记忆类型</option><option>统一有效期</option><option>仅手动删除</option></select></label>
+          <label>抽取时机<select aria-label="记忆抽取时机" value={config.extractionTiming} onChange={event => setMemory({ extractionTiming: event.target.value as LongMemoryConfig['extractionTiming'] })}><option>会话结束 + 业务事件</option><option>仅会话结束</option><option>实时抽取</option></select></label>
+          <label>遗忘策略<select value={config.forgetPolicy} onChange={event => setMemory({ forgetPolicy: event.target.value as LongMemoryConfig['forgetPolicy'] })}><option>按记忆类型</option><option>统一有效期</option><option>仅手动删除</option></select></label>
         </section>
         <section>
           <div className="memory-section-title"><ShieldCheck size={17} /><strong>写入限制</strong></div>
-          <label className="memory-check"><input type="checkbox" defaultChecked />仅写入高置信记忆</label>
-          <label className="memory-check"><input type="checkbox" defaultChecked />保留来源消息与渠道</label>
-          <label className="memory-check"><input type="checkbox" defaultChecked />高风险字段需要人工确认</label>
+          <label className="memory-check"><input type="checkbox" checked={config.writeHighConfidence} onChange={event => setMemory({ writeHighConfidence: event.target.checked })} />仅写入高置信记忆</label>
+          <label className="memory-check"><input type="checkbox" checked={config.retainSource} onChange={event => setMemory({ retainSource: event.target.checked })} />保留来源消息与渠道</label>
+          <label className="memory-check"><input type="checkbox" checked={config.highRiskConfirm} onChange={event => setMemory({ highRiskConfirm: event.target.checked })} />高风险字段需要人工确认</label>
         </section>
       </aside>
       <main className="memory-timeline-panel">
@@ -66,7 +67,7 @@ export function MemoryWorkspace({ notify }: { notify: (message: string) => void 
       </aside>
     </div>
 
-    {dialog === 'backup' ? <BackupKeyDialog current={[identityKey, ...backupKeys]} close={() => setDialog(null)} add={key => { setBackupKeys(current => [...current, key]); setDialog(null); notify('备用标识已添加'); }} /> : null}
+    {dialog === 'backup' ? <BackupKeyDialog current={[identityKey, ...backupKeys]} close={() => setDialog(null)} add={key => { setMemory({ backupKeys: [...backupKeys, key] }); setDialog(null); notify('备用标识已添加'); }} /> : null}
     {dialog === 'mapping' ? <IdentityMappingDialog close={() => setDialog(null)} /> : null}
     {dialog === 'add' ? <AddMemoryDialog close={() => setDialog(null)} add={record => { setRecords(current => [record, ...current]); setDialog(null); notify('记忆已添加'); }} /> : null}
   </div>;

@@ -6,6 +6,20 @@ export interface SessionField { id: string; name: string; description: string; a
 export interface SessionExtractor { id: string; skill: string; fields: string[]; }
 export interface ReviewTool { id: string; tool: string; timeout: number; strategy: string; }
 export interface ReviewChannel { id: string; type: string; endpoint: string; }
+export interface LongMemoryConfig {
+  enabled: boolean;
+  agentStore: string;
+  userStore: string;
+  recallCount: number;
+  weight: number;
+  identityKey: string;
+  backupKeys: string[];
+  extractionTiming: '会话结束 + 业务事件' | '仅会话结束' | '实时抽取';
+  forgetPolicy: '按记忆类型' | '统一有效期' | '仅手动删除';
+  writeHighConfidence: boolean;
+  retainSource: boolean;
+  highRiskConfirm: boolean;
+}
 
 export interface AgentConfig {
   prompt: string;
@@ -19,7 +33,7 @@ export interface AgentConfig {
   skillBindings: Record<string, { version: string; autoUpdate: boolean }>;
   tools: string[];
   knowledgeBases: string[];
-  longMemory: { enabled: boolean; agentStore: string; userStore: string; recallCount: number; weight: number };
+  longMemory: LongMemoryConfig;
   compression: { enabled: boolean; triggerTurns: number; tokenRatio: number; windowSize: number; syncMemory: boolean };
   session: { enabled: boolean; fields: SessionField[]; extractors: SessionExtractor[] };
   reflection: { enabled: boolean; maxCount: number; intensity: string; mode: string; prompt: string };
@@ -48,7 +62,7 @@ export const defaultAgentConfig: AgentConfig = {
   skillBindings: {},
   tools: [],
   knowledgeBases: [],
-  longMemory: { enabled: false, agentStore: '', userStore: '', recallCount: 5, weight: 80 },
+  longMemory: { enabled: false, agentStore: '', userStore: '', recallCount: 5, weight: 80, identityKey: '统一客户 ID', backupKeys: ['手机号'], extractionTiming: '会话结束 + 业务事件', forgetPolicy: '按记忆类型', writeHighConfidence: true, retainSource: true, highRiskConfirm: true },
   compression: { enabled: true, triggerTurns: 5, tokenRatio: 0.8, windowSize: 262144, syncMemory: false },
   session: { enabled: false, fields: [], extractors: [] },
   reflection: { enabled: false, maxCount: 5, intensity: '', mode: '', prompt: '' },

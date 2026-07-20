@@ -63,10 +63,17 @@ describe('advanced agent configuration prototype', () => {
     await user.click(screen.getByRole('button', { name: '行为规则' }));
     await user.click(screen.getByRole('button', { name: '新建规则' }));
     await user.type(screen.getByLabelText('规则名称'), '短消息规则');
-    await user.type(screen.getByLabelText('规则生效条件'), '渠道 = WhatsApp');
-    await user.type(screen.getByLabelText('规则执行动作'), '限制回复长度');
+    await user.selectOptions(screen.getByLabelText('规则生效条件'), '消息发送失败');
+    await user.selectOptions(screen.getByLabelText('规则执行动作'), '优先使用短文本');
     await user.click(screen.getByRole('button', { name: '创建' }));
     expect(screen.getByText('短消息规则')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '添加渠道' }));
+    await user.selectOptions(screen.getByLabelText('渠道类型'), 'telegram');
+    await user.type(screen.getByLabelText('渠道账号'), '@uagent_support');
+    await user.click(screen.getByRole('button', { name: '添加' }));
+    expect(screen.getByRole('heading', { name: 'Telegram' })).toBeInTheDocument();
+    expect(screen.getAllByText('待授权').length).toBeGreaterThanOrEqual(1);
   });
 
   it('manages cross-channel identity, temporal memory and a conflict decision', async () => {
@@ -79,6 +86,7 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getByText('待解决冲突')).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText('主标识'), 'CRM external_id');
     expect(screen.getByLabelText('主标识')).toHaveValue('CRM external_id');
+    expect(JSON.parse(localStorage.getItem('uagent-advanced-config-v1') ?? '{}').longMemory.identityKey).toBe('CRM external_id');
     await user.click(screen.getByRole('button', { name: '身份映射' }));
     expect(screen.getByRole('dialog', { name: '身份映射' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '完成' }));

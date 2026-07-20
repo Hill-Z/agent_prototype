@@ -3,6 +3,7 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { Modal } from '../../components/Modal';
 import { Switch } from '../../components/Switch';
 import channelData from '../../../prototype-content/channels.mock.json';
+import connectorData from '../../../prototype-content/overseas-channels.mock.json';
 
 type ChannelStatus = 'connected' | 'authorization';
 type WorkspaceMode = 'capabilities' | 'rules' | 'context';
@@ -29,7 +30,21 @@ interface ChannelRule {
   enabled: boolean;
 }
 
+interface Connector {
+  id: string;
+  name: string;
+  authType: string;
+  inboundMode: string;
+  outboundMode: string;
+  identityKey: string;
+  inbound: string[];
+  outbound: string[];
+  nativeFormats: string[];
+  fallback: string;
+}
+
 const statusText: Record<ChannelStatus, string> = { connected: '已连接', authorization: '待授权' };
+const connectorCatalog = connectorData as Connector[];
 
 export function ChannelWorkspace({ notify }: { notify: (message: string) => void }) {
   const [channels, setChannels] = useState<Channel[]>(() => channelData.channels as Channel[]);
@@ -70,7 +85,7 @@ export function ChannelWorkspace({ notify }: { notify: (message: string) => void
       </div>
     </main>
 
-    {dialog === 'add' ? <AddChannelDialog close={() => setDialog(null)} add={channel => { setChannels(current => [...current, channel]); setSelectedId(channel.id); setDialog(null); notify('渠道已添加'); }} /> : null}
+    {dialog === 'add' ? <AddChannelDialog connectors={connectorCatalog} close={() => setDialog(null)} add={channel => { setChannels(current => [...current, channel]); setSelectedId(channel.id); setDialog(null); notify('渠道已添加，等待授权'); }} /> : null}
     {dialog === 'settings' ? <ChannelSettingsDialog channel={selected} close={() => setDialog(null)} save={patch => { updateSelected(patch); setDialog(null); notify('渠道设置已保存'); }} /> : null}
     {dialog === 'fallback' ? <FallbackDialog value={selected.fallback} close={() => setDialog(null)} save={fallback => { updateSelected({ fallback }); setDialog(null); notify('降级策略已保存'); }} /> : null}
     {dialog === 'rule' ? <RuleDialog close={() => setDialog(null)} save={rule => { setRules(current => [...current, rule]); setDialog(null); notify('渠道规则已创建'); }} /> : null}
@@ -96,7 +111,7 @@ function CapabilityView({ channel, previewMode, setPreviewMode, editFallback, no
       <CapabilityGroup title="接收" items={channel.inbound} />
       <CapabilityGroup title="发送" items={channel.outbound} />
       <CapabilityGroup title="原生结构" items={channel.nativeFormats} tone="native" />
-      <div className="fallback-policy"><strong>降级策略</strong><span>{channel.fallback}</span><button onClick={editFallback}>编辑</button></div>
+      <div className="fallback-policy"><strong>结构化消息降级</strong><span>{channel.fallback}</span><button onClick={editFallback}>编辑</button></div>
     </section>
     <aside className="channel-message-preview">
       <header><strong>消息预览</strong><div><button className={previewMode === 'native' ? 'active' : ''} onClick={() => setPreviewMode('native')}>原生</button><button className={previewMode === 'fallback' ? 'active' : ''} onClick={() => setPreviewMode('fallback')}>降级</button></div></header>
@@ -135,16 +150,17 @@ function ContextView() {
   return <section className="channel-context-view"><div className="channel-section-heading"><h2>上下文变量</h2></div><div className="context-variable-table"><div className="context-variable-head"><span>变量</span><span>业务含义</span><span>允许使用范围</span><span>启用</span></div>{rows.map(([key, meaning, scope]) => <div className="context-variable-row" key={key}><code>{key}</code><span>{meaning}</span><span>{scope}</span><Switch checked={visibility[key]} onChange={enabled => setVisibility(current => ({ ...current, [key]: enabled }))} label={`启用${key}`} /></div>)}</div></section>;
 }
 
-function AddChannelDialog({ close, add }: { close: () => void; add: (channel: Channel) => void }) {
-  const [name, setName] = useState('');
+function AddChannelDialog({ connectors, close, add }: { connectors: Connector[]; close: () => void; add: (channel: Channel) => void }) {
+  const [connectorId, setConnectorId] = useState(connectors[0]?.id ?? '');
   const [account, setAccount] = useState('');
-  return <Modal title="添加渠道" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" disabled={!name.trim() || !account.trim()} onClick={() => add({ id: `custom_${Date.now()}`, name: name.trim(), account: account.trim(), status: 'connected', inbound: ['文本', '图片'], outbound: ['文本', '图片'], nativeFormats: ['普通消息'], unsupported: [], assetInput: 'URL → asset_id', fallback: '纯文本 + 链接' })}>添加</button></>}><div className="form-grid"><label>渠道名称<input aria-label="渠道名称" value={name} onChange={event => setName(event.target.value)} /></label><label>账号<input aria-label="渠道账号" value={account} onChange={event => setAccount(event.target.value)} /></label></div></Modal>;
+  const connector = connectors.find(item => item.id === connectorId) ?? connectors[0];
+  return <Modal title="添加渠道" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" disabled={!connector || !account.trim()} onClick={() => add({ id: `${connector.id}_${Date.now()}`, name: connector.name, account: account.trim(), status: 'authorization', inbound: connector.inbound, outbound: connector.outbound, nativeFormats: connector.nativeFormats, unsupported: [], assetInput: connector.identityKey, fallback: connector.fallback })}>添加</button></>}><div className="form-grid"><label>渠道类型<select aria-label="渠道类型" value={connectorId} onChange={event => setConnectorId(event.target.value)}>{connectors.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label><label>账号<input aria-label="渠道账号" value={account} onChange={event => setAccount(event.target.value)} /></label></div></Modal>;
 }
 
 function ChannelSettingsDialog({ channel, close, save }: { channel: Channel; close: () => void; save: (patch: Partial<Channel>) => void }) {
   const [account, setAccount] = useState(channel.account);
-  const [status, setStatus] = useState<ChannelStatus>(channel.status);
-  return <Modal title="渠道设置" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" onClick={() => save({ account, status })}>保存</button></>}><div className="form-grid"><label>账号<input aria-label="渠道设置账号" value={account} onChange={event => setAccount(event.target.value)} /></label><label>连接状态<select aria-label="渠道连接状态" value={status} onChange={event => setStatus(event.target.value as ChannelStatus)}><option value="connected">已连接</option><option value="authorization">待授权</option></select></label></div></Modal>;
+  const authType = connectorCatalog.find(connector => channel.id.startsWith(connector.id))?.authType ?? (channel.id.startsWith('udesk_web') ? 'Webhook Secret' : 'API Token');
+  return <Modal title="渠道设置" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" onClick={() => save({ account })}>保存</button></>}><div className="form-grid"><label>账号<input aria-label="渠道设置账号" value={account} onChange={event => setAccount(event.target.value)} /></label><label>鉴权方式<input aria-label="渠道鉴权方式" value={authType} readOnly /></label></div></Modal>;
 }
 
 function FallbackDialog({ value, close, save }: { value: string; close: () => void; save: (value: string) => void }) {
@@ -154,7 +170,7 @@ function FallbackDialog({ value, close, save }: { value: string; close: () => vo
 
 function RuleDialog({ close, save }: { close: () => void; save: (rule: ChannelRule) => void }) {
   const [name, setName] = useState('');
-  const [condition, setCondition] = useState('');
-  const [action, setAction] = useState('');
-  return <Modal title="新建渠道规则" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" disabled={!name.trim() || !condition.trim() || !action.trim()} onClick={() => save({ id: `rule-${Date.now()}`, name: name.trim(), condition: condition.trim(), action: action.trim(), enabled: true })}>创建</button></>}><div className="form-grid"><label>规则名称<input aria-label="规则名称" value={name} onChange={event => setName(event.target.value)} /></label><label>生效条件<input aria-label="规则生效条件" value={condition} onChange={event => setCondition(event.target.value)} /></label></div><label className="stacked-field">执行动作<input aria-label="规则执行动作" value={action} onChange={event => setAction(event.target.value)} /></label></Modal>;
+  const [condition, setCondition] = useState('首次会话');
+  const [action, setAction] = useState('发送隐私模板');
+  return <Modal title="新建渠道规则" onClose={close} footer={<><button className="secondary-button" onClick={close}>取消</button><button className="primary-button" disabled={!name.trim()} onClick={() => save({ id: `rule-${Date.now()}`, name: name.trim(), condition, action, enabled: true })}>创建</button></>}><div className="form-grid"><label>规则名称<input aria-label="规则名称" value={name} onChange={event => setName(event.target.value)} /></label><label>生效条件<select aria-label="规则生效条件" value={condition} onChange={event => setCondition(event.target.value)}><option>首次会话</option><option>收到图片</option><option>结构化消息不受支持</option><option>消息发送失败</option></select></label></div><label className="stacked-field">执行动作<select aria-label="规则执行动作" value={action} onChange={event => setAction(event.target.value)}><option>发送隐私模板</option><option>优先使用短文本</option><option>降级为文本消息</option><option>转人工处理</option></select></label></Modal>;
 }
