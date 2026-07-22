@@ -387,4 +387,51 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getByRole('heading', { name: '投诉升级处理' })).toBeInTheDocument();
     expect(screen.getByDisplayValue(/要求保留证据并记录升级原因/)).toBeInTheDocument();
   });
+
+  it('registers a reusable global tool with input and output fields', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '工具' }));
+    expect(screen.getByRole('heading', { name: '工具' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '新建工具' }));
+    const dialog = screen.getByRole('dialog', { name: '新建工具' });
+    await user.type(within(dialog).getByLabelText('工具名称'), '查询物流轨迹');
+    await user.type(within(dialog).getByLabelText('工具标识'), 'logistics.track');
+    await user.type(within(dialog).getByLabelText('接口地址'), 'https://api.example.com/logistics/{order_id}');
+    await user.type(within(dialog).getByLabelText('输入参数参数名'), 'order_id');
+    await user.type(within(dialog).getByLabelText('输出参数参数名'), 'tracking_status');
+    await user.click(within(dialog).getByRole('button', { name: '保存工具' }));
+
+    expect(screen.getByText('查询物流轨迹')).toBeInTheDocument();
+    const saved = JSON.parse(localStorage.getItem('uagent-global-tools-v1') ?? '[]');
+    expect(saved.find((tool: { key: string }) => tool.key === 'logistics.track').inputFields[0].name).toBe('order_id');
+    expect(saved.find((tool: { key: string }) => tool.key === 'logistics.track').outputFields[0].name).toBe('tracking_status');
+  });
+
+  it('auto-discovers Skill Python tools and saves runtime customer messages', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/?view=skills');
+    render(<App />);
+
+    await user.click(screen.getByText('客户资料更新').closest('button')!);
+    await user.click(screen.getByRole('button', { name: '工具配置' }));
+    expect(screen.getAllByText('get_customer_update_profile')).toHaveLength(2);
+    expect(screen.getByText('submit_account_update')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('兜底处理'), 'handoff');
+    await user.clear(screen.getByLabelText('开始调用话术'));
+    await user.type(screen.getByLabelText('开始调用话术'), '我先帮您查询订单。');
+    await user.clear(screen.getByLabelText('工具超时时间'));
+    await user.type(screen.getByLabelText('工具超时时间'), '12');
+    await user.clear(screen.getByLabelText('客户插话话术'));
+    await user.type(screen.getByLabelText('客户插话话术'), '查询还在继续，请稍等。');
+    await user.click(screen.getByRole('button', { name: '保存草稿' }));
+
+    const skills = JSON.parse(localStorage.getItem('uagent-managed-skills-v1') ?? '[]');
+    const binding = skills.find((skill: { id: string }) => skill.id === 'skill-account-update').toolBindings.find((item: { toolId: string }) => item.toolId.endsWith(':get_customer_update_profile'));
+    expect(binding.fallbackAction).toBe('handoff');
+    expect(binding.startMessage).toBe('我先帮您查询订单。');
+    expect(binding.timeoutSeconds).toBe(12);
+    expect(binding.progressMessage).toBe('查询还在继续，请稍等。');
+  });
 });
