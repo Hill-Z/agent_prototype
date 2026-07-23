@@ -1,0 +1,4096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="description" content="Pacific supervisor monitoring and operational insights report.">
+<title>Pacific Operations Report</title>
+<style>
+  :root {
+    --paper: #f3f6f4;
+    --surface: #fbfcfa;
+    --ink: #103846;
+    --ink-deep: #082936;
+    --text: #28383e;
+    --muted: #68777b;
+    --line: #d6dfdc;
+    --line-strong: #aabbb7;
+    --ocean: #1b7880;
+    --teal: #1b7880;
+    --ocean-soft: #d9eceb;
+    --coral: #d75c50;
+    --coral-soft: #f4dfdc;
+    --gold: #d69a2d;
+    --gold-soft: #f5e7c8;
+    --green: #3e7b5f;
+    --green-soft: #dce9df;
+    --blue: #3c6e91;
+    --blue-soft: #dce6ee;
+    --purple: #775f8f;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+    --radius: 5px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--text);
+    font-family: Aptos, Calibri, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums lining-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+    letter-spacing: 0;
+  }
+
+  button,
+  select {
+    min-height: 40px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  .skip-link {
+    position: fixed;
+    top: var(--space-sm);
+    left: var(--space-sm);
+    z-index: 30;
+    transform: translateY(-150%);
+    border-radius: 3px;
+    background: var(--ink-deep);
+    color: var(--surface);
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  .shell {
+    width: min(1460px, calc(100% - 40px));
+    margin: 0 auto;
+  }
+
+  .topbar {
+    background: var(--ink-deep);
+    color: #eff7f6;
+  }
+
+  .topbar-inner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--space-xl);
+    align-items: center;
+    min-height: 76px;
+  }
+
+  .brand {
+    font-family: Bahnschrift, "Arial Narrow", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+  }
+
+  .title-block {
+    min-width: 0;
+    border-left: 1px solid #3a5963;
+    padding-left: var(--space-xl);
+  }
+
+  .title-block h1 {
+    margin: 0;
+    color: #f5fbfa;
+    font-family: "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 1.55rem;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: 0;
+  }
+
+  .title-block p {
+    margin: 3px 0 0;
+    color: #b9ced0;
+    font-size: 0.78rem;
+  }
+
+  .data-badge {
+    border: 1px solid #6f9297;
+    border-radius: 3px;
+    padding: 5px 9px;
+    color: #d5e5e5;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .controlbar {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    border-bottom: 1px solid var(--line-strong);
+    background: rgba(251, 252, 250, 0.96);
+    backdrop-filter: blur(12px);
+  }
+
+  .controlbar-inner {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    min-height: 62px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .tabs {
+    display: inline-flex;
+    flex: 0 0 auto;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .tab-button {
+    border: 0;
+    border-right: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--muted);
+    padding: 0 var(--space-lg);
+    font-size: 0.82rem;
+    font-weight: 750;
+  }
+
+  .tab-button:last-child {
+    border-right: 0;
+  }
+
+  .tab-button[aria-selected="true"] {
+    background: var(--ink);
+    color: #f5fbfa;
+  }
+
+  .control-spacer {
+    flex: 1;
+    min-width: var(--space-xl);
+  }
+
+  .control-label {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 0.73rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .field,
+  .command {
+    flex: 0 0 auto;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .field {
+    padding: 0 32px 0 12px;
+  }
+
+  .command {
+    padding: 0 var(--space-md);
+    font-size: 0.8rem;
+    font-weight: 750;
+  }
+
+  .command:hover {
+    border-color: var(--ocean);
+    color: var(--ocean);
+  }
+
+  .command.primary {
+    border-color: var(--ocean);
+    background: var(--ocean);
+    color: #f7fbfa;
+  }
+
+  .command.primary:hover {
+    background: var(--ink);
+    color: #f7fbfa;
+  }
+
+  button:focus-visible,
+  select:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .view {
+    display: none;
+    padding: var(--space-2xl) 0 var(--space-3xl);
+  }
+
+  .view.active {
+    display: block;
+    animation: view-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .view-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-xl);
+    align-items: end;
+    margin-bottom: var(--space-xl);
+  }
+
+  .eyebrow {
+    margin: 0 0 var(--space-sm);
+    color: var(--ocean);
+    font-family: Bahnschrift, "Arial Narrow", sans-serif;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  h2,
+  h3 {
+    margin: 0;
+    color: var(--ink-deep);
+    letter-spacing: 0;
+  }
+
+  h2 {
+    font-family: "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 2.15rem;
+    font-weight: 600;
+    line-height: 1.08;
+  }
+
+  h3 {
+    font-size: 0.98rem;
+    font-weight: 800;
+  }
+
+  .updated {
+    color: var(--muted);
+    font-size: 0.76rem;
+    text-align: right;
+  }
+
+  .updated strong {
+    display: block;
+    color: var(--ink);
+    font-size: 0.88rem;
+  }
+
+  .report-scope {
+    display: block;
+    margin-top: var(--space-xs);
+    color: var(--ocean);
+    font-size: 0.72rem;
+    font-weight: 750;
+  }
+
+  .metric-ledger {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin-bottom: var(--space-xl);
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .metric {
+    position: relative;
+    min-width: 0;
+    padding: 18px var(--space-lg) 18px 0;
+    transition: background-color 180ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .metric + .metric {
+    border-left: 1px solid var(--line-strong);
+    padding-left: var(--space-lg);
+  }
+
+  .metric-label {
+    min-height: 34px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 750;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+
+  .metric-label-row {
+    display: flex;
+    min-height: 34px;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    align-items: flex-start;
+  }
+
+  .metric-label-row .metric-label {
+    min-height: 0;
+  }
+
+  .metric-info {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ocean);
+    font-family: Georgia, serif;
+    font-size: 0.78rem;
+    font-style: italic;
+    font-weight: 700;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease,
+      transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .metric:has(.metric-info):hover,
+  .metric:has(.metric-info):focus-within {
+    background: #edf4f1;
+    transform: translateY(-2px);
+  }
+
+  .metric-info:hover,
+  .metric-info:focus-visible {
+    border-color: var(--ocean);
+    background: var(--ocean);
+    color: #f7fbfa;
+    transform: translateY(-1px);
+  }
+
+  .metric-value {
+    margin-top: var(--space-sm);
+    color: var(--ink-deep);
+    font-family: Bahnschrift, "Arial Narrow", sans-serif;
+    font-size: 1.9rem;
+    font-weight: 650;
+    line-height: 1;
+  }
+
+  .metric-value.risk {
+    color: var(--coral);
+  }
+
+  .metric-value.good {
+    color: var(--green);
+  }
+
+  .metric-note {
+    margin-top: var(--space-sm);
+    color: var(--muted);
+    font-size: 0.72rem;
+  }
+
+  .two-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(310px, 0.45fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+  }
+
+  .insights-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+  }
+
+  .panel {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    align-items: baseline;
+    padding: 15px var(--space-lg);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .panel-meta {
+    color: var(--muted);
+    font-size: 0.72rem;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.79rem;
+  }
+
+  th,
+  td {
+    padding: 12px var(--space-md);
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 750;
+    text-transform: uppercase;
+  }
+
+  th:first-child,
+  td:first-child,
+  .text-left {
+    text-align: left;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tbody tr:hover,
+  tbody tr.selected {
+    background: var(--ocean-soft);
+  }
+
+  .queue-name,
+  .agent-name {
+    color: var(--ink-deep);
+    font-weight: 750;
+  }
+
+  .number-risk {
+    color: var(--coral);
+    font-weight: 750;
+  }
+
+  .number-good {
+    color: var(--green);
+    font-weight: 750;
+  }
+
+  .state-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 220px;
+  }
+
+  .state-cell {
+    display: grid;
+    align-content: center;
+    min-width: 0;
+    padding: var(--space-lg);
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .state-cell:nth-child(even) {
+    border-right: 0;
+  }
+
+  .state-cell:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .state-cell strong {
+    color: var(--ink-deep);
+    font-family: Bahnschrift, "Arial Narrow", sans-serif;
+    font-size: 1.8rem;
+    font-weight: 650;
+  }
+
+  .state-cell span {
+    margin-top: var(--space-xs);
+    color: var(--muted);
+    font-size: 0.74rem;
+  }
+
+  .state-cell.available strong {
+    color: var(--green);
+  }
+
+  .state-cell.engaged strong {
+    color: var(--ocean);
+  }
+
+  .state-cell.wrap strong {
+    color: var(--gold);
+  }
+
+  .state-cell.offline strong {
+    color: var(--muted);
+  }
+
+  .active-panel {
+    margin-bottom: var(--space-lg);
+  }
+
+  .supervision-status {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--space-lg);
+    border-bottom: 1px solid var(--line);
+    background: #eef4f1;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .supervision-status.active {
+    background: var(--gold-soft);
+    color: var(--ink);
+  }
+
+  .supervision-dot {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--line-strong);
+  }
+
+  .supervision-status.active .supervision-dot {
+    background: var(--coral);
+    box-shadow: 0 0 0 4px rgba(215, 92, 80, 0.14);
+  }
+
+  .action-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 5px;
+  }
+
+  .action {
+    min-height: 32px;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 0 8px;
+    font-size: 0.69rem;
+    font-weight: 750;
+  }
+
+  .action:hover {
+    border-color: var(--ocean);
+    color: var(--ocean);
+  }
+
+  .action[data-action="assist"] {
+    border-color: var(--coral);
+    color: var(--coral);
+  }
+
+  .sentiment,
+  .consent {
+    display: inline-block;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 0.67rem;
+    font-weight: 750;
+  }
+
+  .sentiment.positive,
+  .consent.captured {
+    background: var(--green-soft);
+    color: var(--green);
+  }
+
+  .sentiment.neutral {
+    background: var(--blue-soft);
+    color: var(--blue);
+  }
+
+  .sentiment.concerned {
+    background: var(--gold-soft);
+    color: #926510;
+  }
+
+  .sentiment.negative,
+  .consent.pending {
+    background: var(--coral-soft);
+    color: var(--coral);
+  }
+
+  .quality-band {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: #eef6f5;
+  }
+
+  .quality-item {
+    min-width: 0;
+    padding: var(--space-lg);
+  }
+
+  .quality-item + .quality-item {
+    border-left: 1px solid #385865;
+  }
+
+  .quality-item span {
+    display: block;
+    color: #b9ced0;
+    font-size: 0.7rem;
+    font-weight: 750;
+    text-transform: uppercase;
+  }
+
+  .quality-item strong {
+    display: block;
+    margin-top: var(--space-sm);
+    color: #f7fbfa;
+    font-family: Bahnschrift, "Arial Narrow", sans-serif;
+    font-size: 1.7rem;
+    font-weight: 650;
+  }
+
+  .range-switch {
+    display: inline-flex;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .range-button {
+    min-height: 34px;
+    border: 0;
+    border-right: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--muted);
+    padding: 0 10px;
+    font-size: 0.72rem;
+    font-weight: 750;
+  }
+
+  .range-button:last-child {
+    border-right: 0;
+  }
+
+  .range-button.active {
+    background: var(--ink);
+    color: #f7fbfa;
+  }
+
+  .chart-body {
+    position: relative;
+    min-height: 330px;
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+  }
+
+  .chart-body svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .chart-point {
+    cursor: pointer;
+    transition: r 140ms ease, fill 140ms ease, stroke-width 140ms ease;
+  }
+
+  .chart-point:hover,
+  .chart-point:focus {
+    fill: var(--ocean-soft);
+    outline: none;
+  }
+
+  .chart-tooltip {
+    position: absolute;
+    z-index: 4;
+    width: min(240px, calc(100% - 24px));
+    transform: translate(-50%, calc(-100% - 12px));
+    border: 1px solid #41616a;
+    border-radius: 3px;
+    background: var(--ink-deep);
+    color: #eef7f6;
+    padding: 10px 12px;
+    box-shadow: 0 12px 28px rgba(8, 41, 54, 0.18);
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 140ms ease, transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .chart-tooltip[hidden] {
+    display: none;
+  }
+
+  .chart-tooltip strong {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-md);
+    font-size: 0.78rem;
+  }
+
+  .chart-tooltip-change {
+    color: #9ed4cf;
+    font-weight: 750;
+  }
+
+  .chart-tooltip-list {
+    display: grid;
+    gap: 4px;
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid #41616a;
+    font-size: 0.68rem;
+  }
+
+  .chart-tooltip-list span {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-swatch {
+    width: 18px;
+    height: 4px;
+    background: var(--swatch);
+  }
+
+  .channel-bars {
+    display: grid;
+    gap: var(--space-md);
+    padding: var(--space-lg);
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 88px minmax(100px, 1fr) 74px;
+    gap: var(--space-sm);
+    align-items: center;
+    font-size: 0.76rem;
+  }
+
+  .bar-track {
+    height: 8px;
+    background: var(--line);
+  }
+
+  .bar-fill {
+    width: var(--bar-width);
+    height: 100%;
+    background: var(--bar-color);
+    transform-origin: left;
+    animation: bar-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .bar-value {
+    color: var(--ink-deep);
+    font-weight: 750;
+    text-align: right;
+  }
+
+  .scorecard-panel {
+    margin-bottom: var(--space-lg);
+  }
+
+  .quality-score {
+    display: inline-flex;
+    min-width: 34px;
+    justify-content: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    padding: 2px 5px;
+    color: var(--ink);
+    font-weight: 750;
+  }
+
+  .evidence-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.55fr);
+    gap: var(--space-lg);
+  }
+
+  .evidence-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+  }
+
+  .evidence-button {
+    min-height: 30px;
+    border: 0;
+    background: transparent;
+    color: var(--ocean);
+    padding: 0 4px;
+    font-size: 0.7rem;
+    font-weight: 750;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .evidence-button:hover {
+    color: var(--ink-deep);
+  }
+
+  .evidence-button[aria-pressed="true"] {
+    background: var(--ocean-soft);
+    color: var(--ink-deep);
+    text-decoration: none;
+  }
+
+  .queue-select-button {
+    min-height: 36px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-deep);
+    padding: 0;
+    font-weight: 750;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 4px;
+    transition: color 160ms ease, text-decoration-color 160ms ease;
+  }
+
+  .queue-select-button:hover,
+  .queue-select-button:focus-visible,
+  .queue-select-button[aria-pressed="true"] {
+    color: var(--ocean);
+    text-decoration-color: currentColor;
+  }
+
+  .evidence-detail {
+    min-height: 310px;
+    padding: var(--space-xl);
+    border-radius: var(--radius);
+    background: #e9f0ed;
+  }
+
+  .evidence-detail .detail-label {
+    color: var(--ocean);
+    font-size: 0.7rem;
+    font-weight: 750;
+    text-transform: uppercase;
+  }
+
+  .evidence-detail h3 {
+    margin-top: var(--space-sm);
+    font-family: "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 1.35rem;
+  }
+
+  .evidence-detail p {
+    margin: var(--space-lg) 0 0;
+    color: var(--text);
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+
+  .evidence-audio {
+    width: 100%;
+    margin-top: var(--space-lg);
+  }
+
+  .evidence-download {
+    width: 100%;
+    margin-top: var(--space-xl);
+  }
+
+  .detail-meta {
+    display: grid;
+    gap: var(--space-sm);
+    margin-top: var(--space-xl);
+  }
+
+  .detail-meta div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--line-strong);
+    font-size: 0.74rem;
+  }
+
+  .report-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-xl);
+    padding: var(--space-xl) 0 var(--space-2xl);
+    border-top: 1px solid var(--line-strong);
+    color: var(--muted);
+    font-size: 0.72rem;
+  }
+
+  .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+  }
+
+  .metric-drawer-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+  }
+
+  .metric-drawer-shell[hidden] {
+    display: none;
+  }
+
+  .metric-drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-height: 100%;
+    border: 0;
+    background: rgba(8, 41, 54, 0.48);
+    opacity: 0;
+    transition: opacity 190ms ease;
+  }
+
+  .metric-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(520px, calc(100% - 32px));
+    height: 100%;
+    overflow: auto;
+    border-left: 1px solid #41616a;
+    background: var(--surface);
+    padding: 52px var(--space-2xl) var(--space-2xl);
+    box-shadow: -20px 0 48px rgba(8, 41, 54, 0.16);
+    transform: translateX(24px);
+    opacity: 0;
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+  }
+
+  .metric-drawer-shell.is-open .metric-drawer-backdrop,
+  .metric-drawer-shell.is-open .metric-drawer {
+    opacity: 1;
+  }
+
+  .metric-drawer-shell.is-open .metric-drawer {
+    transform: translateX(0);
+  }
+
+  .drawer-close {
+    position: absolute;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink);
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  .metric-drawer .detail-label {
+    color: var(--ocean);
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .metric-drawer h2 {
+    margin-top: var(--space-sm);
+    font-size: 1.8rem;
+  }
+
+  .metric-drawer h2:focus {
+    outline: none;
+  }
+
+  .drawer-value {
+    margin-top: var(--space-md);
+    color: var(--ink-deep);
+    font-family: Bahnschrift, "Arial Narrow", sans-serif;
+    font-size: 2.4rem;
+    font-weight: 650;
+  }
+
+  .drawer-section {
+    display: grid;
+    gap: 6px;
+    padding: var(--space-lg) 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .drawer-section:first-of-type {
+    margin-top: var(--space-xl);
+  }
+
+  .drawer-section h3 {
+    color: var(--muted);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .drawer-section p,
+  .drawer-section code {
+    margin: 0;
+    color: var(--text);
+    font-size: 0.84rem;
+    line-height: 1.65;
+  }
+
+  .drawer-section code {
+    display: block;
+    overflow-wrap: anywhere;
+    border: 1px solid var(--line);
+    background: #edf4f1;
+    padding: 10px 12px;
+    color: var(--ink-deep);
+    font-family: Consolas, "Courier New", monospace;
+  }
+
+  .print-methodology {
+    display: none;
+  }
+
+  @keyframes view-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes bar-in {
+    from {
+      transform: scaleX(0);
+      opacity: 0.4;
+    }
+    to {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    .view.active,
+    .bar-fill {
+      animation: none;
+    }
+
+    .metric,
+    .metric-info,
+    .chart-point,
+    .chart-tooltip,
+    .metric-drawer,
+    .metric-drawer-backdrop,
+    .queue-select-button,
+    .donut-segment {
+      animation: none;
+      transition: none;
+    }
+  }
+
+  .analysis-drilldown {
+    position: sticky;
+    top: 74px;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    margin: 18px 0;
+    padding: 8px 10px 8px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(251, 252, 250, 0.96);
+    box-shadow: 0 12px 32px rgba(24, 51, 55, 0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .analysis-drilldown-label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .drilldown-chips {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .drilldown-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 5px 10px;
+    border: 1px solid #b9d3d2;
+    border-radius: 999px;
+    color: #174b51;
+    background: #edf6f4;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .clear-drilldown {
+    min-height: 34px;
+    padding: 6px 11px;
+    border: 0;
+    border-radius: 8px;
+    color: var(--teal);
+    background: transparent;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .clear-drilldown:hover,
+  .clear-drilldown:focus-visible {
+    background: #e8f2f0;
+  }
+
+  .analysis-visual-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .analysis-panel {
+    min-height: 390px;
+  }
+
+  .analysis-panel .panel-header {
+    margin-bottom: 12px;
+  }
+
+  .analysis-hint {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .donut-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.9fr) minmax(210px, 1.1fr);
+    align-items: center;
+    gap: 20px;
+    min-height: 292px;
+  }
+
+  .donut-figure {
+    position: relative;
+    width: min(100%, 270px);
+    aspect-ratio: 1;
+    margin: 0 auto;
+  }
+
+  .donut-figure svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .donut-segment {
+    cursor: pointer;
+    transition: opacity 160ms ease, stroke-width 160ms ease;
+  }
+
+  .donut-segment:hover,
+  .donut-segment:focus,
+  .donut-segment.selected {
+    opacity: 1;
+    stroke-width: 24;
+    outline: none;
+  }
+
+  .donut-segment.muted {
+    opacity: 0.24;
+  }
+
+  .donut-center {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .donut-center strong {
+    display: block;
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 30px;
+  }
+
+  .donut-center span {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .donut-legend {
+    display: grid;
+    gap: 6px;
+  }
+
+  .donut-legend-button,
+  .outcome-row {
+    width: 100%;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .donut-legend-button {
+    display: grid;
+    grid-template-columns: 10px 1fr auto auto;
+    gap: 9px;
+    align-items: center;
+    min-height: 39px;
+    padding: 7px 9px;
+    color: var(--ink);
+  }
+
+  .donut-legend-button:hover,
+  .donut-legend-button:focus-visible,
+  .donut-legend-button[aria-pressed="true"] {
+    background: #edf4f2;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--dot-color);
+  }
+
+  .donut-legend-button small {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .donut-legend-button strong {
+    min-width: 48px;
+    text-align: right;
+  }
+
+  .queue-performance {
+    display: grid;
+    gap: 10px;
+  }
+
+  .queue-performance-row {
+    display: grid;
+    grid-template-columns: 134px minmax(0, 1fr) 68px;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-height: 58px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .queue-performance-row:hover,
+  .queue-performance-row:focus-visible,
+  .queue-performance-row[aria-pressed="true"] {
+    border-color: #bfd5d2;
+    background: #f0f6f4;
+  }
+
+  .queue-performance-name strong,
+  .queue-performance-name span {
+    display: block;
+  }
+
+  .queue-performance-name span {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .metric-cluster {
+    display: grid;
+    gap: 5px;
+  }
+
+  .mini-bar {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 38px;
+    gap: 7px;
+    align-items: center;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .mini-bar-track {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e3e9e6;
+  }
+
+  .mini-bar-fill {
+    display: block;
+    width: var(--metric-width);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--metric-color);
+  }
+
+  .queue-volume {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .queue-volume strong {
+    display: block;
+    color: var(--ink);
+    font-size: 16px;
+  }
+
+  .outcome-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 10px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .outcome-legend span::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 5px;
+    border-radius: 2px;
+    background: var(--legend-color);
+  }
+
+  .channel-outcomes {
+    display: grid;
+    gap: 9px;
+  }
+
+  .outcome-row {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr) 58px;
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    padding: 7px 8px;
+  }
+
+  .outcome-row:hover,
+  .outcome-row:focus-visible,
+  .outcome-row[aria-pressed="true"] {
+    background: #f0f6f4;
+  }
+
+  .outcome-track {
+    display: flex;
+    height: 17px;
+    overflow: hidden;
+    border-radius: 4px;
+    background: #e6ece9;
+  }
+
+  .outcome-segment {
+    height: 100%;
+    min-width: 2px;
+  }
+
+  .outcome-total {
+    color: var(--muted);
+    font-size: 11px;
+    text-align: right;
+  }
+
+  .heatmap-wrap {
+    overflow-x: auto;
+    padding: 3px 2px 8px;
+  }
+
+  .demand-heatmap {
+    display: grid;
+    grid-template-columns: 52px repeat(8, minmax(38px, 1fr));
+    gap: 5px;
+    min-width: 570px;
+    align-items: center;
+  }
+
+  .heatmap-axis {
+    color: var(--muted);
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .heatmap-day {
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .heatmap-cell {
+    min-height: 31px;
+    border: 1px solid rgba(20, 77, 82, 0.08);
+    border-radius: 5px;
+    color: transparent;
+    cursor: pointer;
+    background: var(--heat-color);
+  }
+
+  .heatmap-cell:hover,
+  .heatmap-cell:focus-visible,
+  .heatmap-cell[aria-pressed="true"] {
+    border-color: #133f46;
+    box-shadow: 0 0 0 2px rgba(27, 120, 128, 0.18);
+  }
+
+  .heatmap-scale {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .heatmap-scale i {
+    width: 19px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .detail-ledger-panel {
+    margin-top: 18px;
+  }
+
+  .analysis-disclosure {
+    margin: -4px 2px 18px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .ledger-tools {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .page-size-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .page-size-label select {
+    min-height: 34px;
+    padding: 4px 28px 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--ink);
+    background: #fff;
+  }
+
+  .table-scroll {
+    max-height: 390px;
+    overflow: auto;
+    border-block: 1px solid var(--line);
+    scrollbar-color: #9fb9b5 #edf2ef;
+    scrollbar-width: thin;
+  }
+
+  .table-scroll table {
+    min-width: 1080px;
+  }
+
+  .table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #eef3f0;
+  }
+
+  .ledger-row-button {
+    padding: 0;
+    border: 0;
+    color: var(--teal);
+    background: transparent;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .ledger-row-button:hover,
+  .ledger-row-button:focus-visible {
+    text-decoration: underline;
+  }
+
+  .outcome-badge,
+  .sentiment-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 750;
+  }
+
+  .outcome-badge.resolved { color: #1f684f; background: #e7f3ec; }
+  .outcome-badge.transferred { color: #805b18; background: #fbf0d9; }
+  .outcome-badge.abandoned { color: #9b4037; background: #fae8e5; }
+  .sentiment-badge { color: #46585c; background: #edf1f0; }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 14px;
+  }
+
+  .pagination-status {
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pagination-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .pagination-button {
+    min-width: 88px;
+    min-height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    background: #fff;
+    font-weight: 750;
+    cursor: pointer;
+  }
+
+  .pagination-button:hover:not(:disabled),
+  .pagination-button:focus-visible:not(:disabled) {
+    border-color: #79a9a5;
+    background: #edf6f4;
+  }
+
+  .pagination-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+  }
+
+  @media (max-width: 1050px) {
+    .metric-ledger {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .metric {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric + .metric {
+      border-left: 0;
+      padding-left: 0;
+    }
+
+    .metric:nth-child(even) {
+      border-left: 1px solid var(--line-strong);
+      padding-left: var(--space-lg);
+    }
+
+    .metric:last-child {
+      grid-column: 1 / -1;
+      border-bottom: 0;
+    }
+
+    .two-column,
+    .insights-grid,
+    .evidence-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .quality-band {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .quality-item:nth-child(3) {
+      border-left: 0;
+      border-top: 1px solid #385865;
+    }
+
+    .quality-item:nth-child(4) {
+      border-top: 1px solid #385865;
+    }
+  }
+
+  @media (max-width: 720px) {
+    body {
+      font-size: 14px;
+    }
+
+    .shell {
+      width: calc(100% - 24px);
+    }
+
+    .topbar-inner {
+      grid-template-columns: 1fr auto;
+      gap: var(--space-md);
+      padding: var(--space-md) 0;
+    }
+
+    .controlbar {
+      position: static;
+    }
+
+    .controlbar-inner {
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      padding: var(--space-sm) 0;
+      overflow: visible;
+    }
+
+    .tabs {
+      width: 100%;
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 0 var(--space-sm);
+    }
+
+    .control-spacer {
+      display: none;
+    }
+
+    .field {
+      flex: 1 1 170px;
+      min-width: 0;
+    }
+
+    .command {
+      flex: 1 1 112px;
+    }
+
+    .title-block {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      border-left: 0;
+      padding-left: 0;
+    }
+
+    .title-block h1 {
+      font-size: 1.35rem;
+    }
+
+    .view-heading {
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+    }
+
+    .updated {
+      text-align: left;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+    }
+
+    .metric-ledger,
+    .quality-band {
+      grid-template-columns: 1fr;
+    }
+
+    .metric,
+    .metric:nth-child(even),
+    .metric + .metric {
+      border-left: 0;
+      padding-left: 0;
+    }
+
+    .metric:last-child {
+      grid-column: auto;
+    }
+
+    .quality-item + .quality-item,
+    .quality-item:nth-child(3),
+    .quality-item:nth-child(4) {
+      border-left: 0;
+      border-top: 1px solid #385865;
+    }
+
+    .bar-row {
+      grid-template-columns: 76px minmax(80px, 1fr) 64px;
+    }
+
+    .chart-body {
+      min-height: 260px;
+      padding: var(--space-sm);
+    }
+
+    .report-footer {
+      flex-direction: column;
+    }
+
+    .metric-drawer {
+      top: auto;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: min(78vh, 690px);
+      border-top: 1px solid #41616a;
+      border-left: 0;
+      padding: 48px var(--space-lg) var(--space-xl);
+      transform: translateY(24px);
+    }
+
+    .metric-drawer-shell.is-open .metric-drawer {
+      transform: translateY(0);
+    }
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  @media print {
+    body {
+      background: #ffffff;
+      font-size: 9pt;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: none;
+    }
+
+    .controlbar,
+    .skip-link,
+    .action-group,
+    .evidence-actions,
+    .metric-info,
+    .metric-drawer-shell,
+    .chart-tooltip,
+    .queue-select-button {
+      display: none !important;
+    }
+
+    .print-methodology {
+      display: block;
+      margin: 5mm 0;
+      padding: 4mm 0;
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .print-methodology p {
+      margin: 2mm 0 0;
+      font-size: 8pt;
+    }
+
+    .topbar {
+      background: var(--ink-deep) !important;
+    }
+
+    .view {
+      display: block !important;
+      padding: 7mm 0;
+      break-before: page;
+    }
+
+    .view:first-of-type {
+      break-before: auto;
+    }
+
+    .panel,
+    .quality-band,
+    .metric-ledger,
+    .evidence-detail {
+      break-inside: avoid;
+    }
+
+    .bar-fill,
+    .view.active {
+      animation: none;
+    }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#mainContent">Skip to report</a>
+
+<header class="topbar">
+  <div class="shell topbar-inner">
+    <div class="brand">PACIFIC</div>
+    <div class="title-block">
+      <h1>Contact Center Operations</h1>
+      <p>Supervisor monitoring, quality assurance and cross-channel reporting</p>
+    </div>
+    <div class="data-badge">Illustrative data</div>
+  </div>
+</header>
+
+<div class="controlbar">
+  <div class="shell controlbar-inner">
+    <div class="tabs" role="tablist" aria-label="Report views">
+      <button class="tab-button" id="liveTab" type="button" role="tab" aria-selected="true" aria-controls="liveView" data-tab="live">Live operations</button>
+      <button class="tab-button" id="insightsTab" type="button" role="tab" aria-selected="false" aria-controls="insightsView" data-tab="insights" tabindex="-1">Operational insights</button>
+    </div>
+    <div class="control-spacer"></div>
+    <label class="control-label" for="queueFilter">Queue</label>
+    <select class="field" id="queueFilter">
+      <option value="all">All queues</option>
+      <option>Customer Care</option>
+      <option>Billing</option>
+      <option>Technical Support</option>
+      <option>Retention</option>
+    </select>
+    <button class="command" id="printButton" type="button">Print / PDF</button>
+    <button class="command" id="csvButton" type="button">Export CSV</button>
+    <button class="command primary" id="reportButton" type="button">Generate report</button>
+  </div>
+</div>
+
+<main class="shell" id="mainContent">
+  <section class="view active" id="liveView" role="tabpanel" aria-labelledby="liveTab liveTitle">
+    <div class="view-heading">
+      <div>
+        <p class="eyebrow">Live operations</p>
+        <h2 id="liveTitle">Supervisor Monitoring &amp; Quality Assurance</h2>
+      </div>
+      <div class="updated">Last refresh<strong id="liveClock">10 Jul 2026, 14:42:18</strong></div>
+    </div>
+
+    <div class="metric-ledger" aria-label="Live operational metrics">
+      <div class="metric" data-metric="liveActive">
+        <div class="metric-label-row"><div class="metric-label">Active interactions</div><button class="metric-info" type="button" data-metric="liveActive" aria-label="Open Active interactions calculation" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value">27</div>
+        <div class="metric-note">12 voice / 15 digital</div>
+      </div>
+      <div class="metric" data-metric="liveWaiting">
+        <div class="metric-label-row"><div class="metric-label">Waiting in queue</div><button class="metric-info" type="button" data-metric="liveWaiting" aria-label="Open Waiting in queue calculation" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value risk">12</div>
+        <div class="metric-note">Across 4 queues</div>
+      </div>
+      <div class="metric" data-metric="liveLongest">
+        <div class="metric-label-row"><div class="metric-label">Longest wait</div><button class="metric-info" type="button" data-metric="liveLongest" aria-label="Open Longest wait calculation" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value risk">03:42</div>
+        <div class="metric-note">Billing queue</div>
+      </div>
+      <div class="metric" data-metric="liveAvailability">
+        <div class="metric-label-row"><div class="metric-label">Agent availability</div><button class="metric-info" type="button" data-metric="liveAvailability" aria-label="Open Agent availability calculation" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value good">37.5%</div>
+        <div class="metric-note">18 of 48 available</div>
+      </div>
+      <div class="metric" data-metric="liveServiceLevel">
+        <div class="metric-label-row"><div class="metric-label">Service level</div><button class="metric-info" type="button" data-metric="liveServiceLevel" aria-label="Open Service level definition" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value">83.4%</div>
+        <div class="metric-note">Answered within target</div>
+      </div>
+    </div>
+
+    <div class="two-column">
+      <section class="panel" aria-labelledby="queueTitle">
+        <div class="panel-header">
+          <h3 id="queueTitle">Queue status</h3>
+          <span class="panel-meta">Current workload</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Queue</th>
+                <th scope="col">Waiting</th>
+                <th scope="col">Active</th>
+                <th scope="col">Longest wait</th>
+                <th scope="col">Service level</th>
+                <th scope="col">Abandon rate</th>
+              </tr>
+            </thead>
+            <tbody id="queueRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="availabilityTitle">
+        <div class="panel-header">
+          <h3 id="availabilityTitle">Agent availability</h3>
+          <span class="panel-meta">48 agents</span>
+        </div>
+        <div class="state-grid">
+          <div class="state-cell available"><strong>18</strong><span>Available</span></div>
+          <div class="state-cell engaged"><strong>22</strong><span>Engaged</span></div>
+          <div class="state-cell wrap"><strong>5</strong><span>After-call work</span></div>
+          <div class="state-cell offline"><strong>3</strong><span>Offline</span></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel active-panel" aria-labelledby="interactionsTitle">
+      <div class="panel-header">
+        <h3 id="interactionsTitle">Active interactions</h3>
+        <span class="panel-meta" id="interactionCount">8 displayed</span>
+      </div>
+      <div class="supervision-status" id="supervisionStatus">
+        <span class="supervision-dot"></span>
+        <span>No supervisor session active</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Interaction</th>
+              <th scope="col">Channel</th>
+              <th scope="col">Queue</th>
+              <th scope="col">Agent</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Sentiment</th>
+              <th scope="col">Barge-in / supervisor action</th>
+            </tr>
+          </thead>
+          <tbody id="interactionRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="quality-band" aria-label="Live quality metrics">
+      <div class="quality-item"><span>AHT</span><strong>06:42</strong></div>
+      <div class="quality-item"><span>FCR</span><strong>78.4%</strong></div>
+      <div class="quality-item"><span>CSAT</span><strong>91.6%</strong></div>
+      <div class="quality-item"><span>Productivity</span><strong>7.8 / hr</strong></div>
+    </div>
+  </section>
+
+  <section class="view" id="insightsView" role="tabpanel" aria-labelledby="insightsTab insightsTitle">
+    <div class="view-heading">
+      <div>
+        <p class="eyebrow">Cross-channel reporting</p>
+        <h2 id="insightsTitle">Reporting &amp; Operational Insights</h2>
+      </div>
+      <div class="updated">
+        Reporting period
+        <strong id="periodLabel">4 - 10 July 2026</strong>
+        <span class="report-scope" id="reportScope">Custom report &middot; 7 days &middot; All queues</span>
+      </div>
+    </div>
+
+    <div class="metric-ledger" aria-label="Historical performance metrics">
+      <div class="metric" data-metric="interactions">
+        <div class="metric-label-row"><div class="metric-label">Interactions</div><button class="metric-info" type="button" data-metric="interactions" aria-label="Open Interactions calculation" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value" id="metricInteractions">5,181</div>
+        <div class="metric-note">All channels</div>
+      </div>
+      <div class="metric" data-metric="aht">
+        <div class="metric-label-row"><div class="metric-label">AHT</div><button class="metric-info" type="button" data-metric="aht" aria-label="Open AHT definition" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value" id="metricAht">06:42</div>
+        <div class="metric-note">Average handle time</div>
+      </div>
+      <div class="metric" data-metric="fcr">
+        <div class="metric-label-row"><div class="metric-label">FCR</div><button class="metric-info" type="button" data-metric="fcr" aria-label="Open FCR definition" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value" id="metricFcr">78.4%</div>
+        <div class="metric-note">First-contact resolution</div>
+      </div>
+      <div class="metric" data-metric="csat">
+        <div class="metric-label-row"><div class="metric-label">CSAT</div><button class="metric-info" type="button" data-metric="csat" aria-label="Open CSAT definition" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value good" id="metricCsat">91.6%</div>
+        <div class="metric-note">Survey responses</div>
+      </div>
+      <div class="metric" data-metric="productivity">
+        <div class="metric-label-row"><div class="metric-label">Productivity</div><button class="metric-info" type="button" data-metric="productivity" aria-label="Open Productivity definition" aria-haspopup="dialog">i</button></div>
+        <div class="metric-value" id="metricProductivity">7.8</div>
+        <div class="metric-note">Interactions / agent / hour</div>
+      </div>
+    </div>
+
+    <div class="analysis-drilldown" id="analysisDrilldown" aria-label="Active analysis filters">
+      <span class="analysis-drilldown-label">Drilldown</span>
+      <div class="drilldown-chips" id="drilldownChips"></div>
+      <button class="clear-drilldown" id="clearDrilldown" type="button">Clear drilldown</button>
+    </div>
+
+    <section class="print-methodology" id="printMethodology" aria-label="Metric methodology">
+      <h3>Metric methodology</h3>
+      <p>Interactions equal the sum of included channel interactions. Other quality metrics are reported illustrative values unless raw event or survey records are available.</p>
+    </section>
+
+    <div class="insights-grid">
+      <section class="panel" aria-labelledby="trendTitle">
+        <div class="panel-header">
+          <div>
+            <h3 id="trendTitle">Interaction volume</h3>
+            <div class="chart-legend" id="trendLegend"></div>
+          </div>
+          <div class="range-switch" aria-label="Historical range">
+            <button class="range-button active" type="button" data-range="7d" aria-pressed="true">7 days</button>
+            <button class="range-button" type="button" data-range="30d" aria-pressed="false">30 days</button>
+          </div>
+        </div>
+        <div class="chart-body" id="volumeChart" role="group" aria-label="Historical interaction volume chart">
+          <div class="chart-tooltip" id="chartTooltip" role="status" hidden></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="channelTitle">
+        <div class="panel-header">
+          <h3 id="channelTitle">Channel mix</h3>
+          <span class="panel-meta">Voice and digital</span>
+        </div>
+        <div class="channel-bars" id="channelBars"></div>
+      </section>
+    </div>
+
+    <div class="analysis-visual-grid" aria-label="Interactive operational analysis">
+      <section class="panel analysis-panel" aria-labelledby="donutTitle">
+        <div class="panel-header">
+          <div>
+            <h3 id="donutTitle">Channel distribution</h3>
+            <span class="analysis-hint">Select a segment to filter the interaction ledger</span>
+          </div>
+          <span class="panel-meta">Share of interactions</span>
+        </div>
+        <div id="channelDonut"></div>
+      </section>
+
+      <section class="panel analysis-panel" aria-labelledby="queuePerformanceTitle">
+        <div class="panel-header">
+          <div>
+            <h3 id="queuePerformanceTitle">Queue performance</h3>
+            <span class="analysis-hint">Volume with FCR, CSAT and service level</span>
+          </div>
+          <span class="panel-meta">Multi-dimensional comparison</span>
+        </div>
+        <div class="queue-performance" id="queuePerformanceChart"></div>
+      </section>
+
+      <section class="panel analysis-panel" aria-labelledby="outcomeTitle">
+        <div class="panel-header">
+          <div>
+            <h3 id="outcomeTitle">Outcome by channel</h3>
+            <span class="analysis-hint">Resolved, transferred and abandoned interactions</span>
+          </div>
+          <span class="panel-meta">Stacked distribution</span>
+        </div>
+        <div class="outcome-legend" aria-hidden="true">
+          <span style="--legend-color:#3e7b5f">Resolved</span>
+          <span style="--legend-color:#d69a2d">Transferred</span>
+          <span style="--legend-color:#d75c50">Abandoned</span>
+        </div>
+        <div class="channel-outcomes" id="channelOutcomeChart"></div>
+      </section>
+
+      <section class="panel analysis-panel" aria-labelledby="heatmapTitle">
+        <div class="panel-header">
+          <div>
+            <h3 id="heatmapTitle">Demand heatmap</h3>
+            <span class="analysis-hint">Select a weekday and time band to inspect records</span>
+          </div>
+          <span class="panel-meta">Workload intensity index</span>
+        </div>
+        <div class="heatmap-wrap">
+          <div class="demand-heatmap" id="demandHeatmap"></div>
+        </div>
+        <div class="heatmap-scale" aria-hidden="true"><span>Lower</span><i style="background:#e8f1ee"></i><i style="background:#c8ded8"></i><i style="background:#91bdb5"></i><i style="background:#4f918c"></i><i style="background:#1e686c"></i><span>Higher</span></div>
+      </section>
+    </div>
+    <p class="analysis-disclosure">Visual breakdowns and ledger records are illustrative. Queue selections rescope report metrics; channel and demand selections filter ledger and CSV detail rows. The ledger is a representative analytical sample and does not reconcile transaction by transaction to the headline total.</p>
+
+    <section class="panel scorecard-panel" aria-labelledby="scorecardTitle">
+      <div class="panel-header">
+        <h3 id="scorecardTitle">Agent scorecards</h3>
+        <span class="panel-meta">Quality and throughput</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Agent</th>
+              <th scope="col">Interactions</th>
+              <th scope="col">AHT</th>
+              <th scope="col">FCR</th>
+              <th scope="col">CSAT</th>
+              <th scope="col">Productivity</th>
+              <th scope="col">Quality</th>
+            </tr>
+          </thead>
+          <tbody id="scorecardRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="evidence-layout" aria-labelledby="evidenceTitle">
+      <div class="panel">
+        <div class="panel-header">
+          <h3 id="evidenceTitle">Interaction records</h3>
+          <span class="panel-meta">Recording samples, transcripts, AI summaries and consent</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Interaction</th>
+                <th scope="col">Date</th>
+                <th scope="col">Channel</th>
+                <th scope="col">Queue</th>
+                <th scope="col">Agent</th>
+                <th scope="col">Consent</th>
+                <th scope="col">Records</th>
+              </tr>
+            </thead>
+            <tbody id="evidenceRows"></tbody>
+          </table>
+        </div>
+      </div>
+      <aside class="evidence-detail" id="evidenceDetail" aria-live="polite">
+        <div class="detail-label">Selected interaction</div>
+        <h3>PC-78394</h3>
+        <p>Customer contacted Billing to clarify a duplicate charge. Identity verification completed and the adjustment was confirmed during the same interaction.</p>
+        <div class="detail-meta">
+          <div><span>Channel</span><strong>Voice</strong></div>
+          <div><span>AI summary</span><strong>Available</strong></div>
+          <div><span>Consent</span><strong>Captured</strong></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel detail-ledger-panel" aria-labelledby="detailLedgerTitle">
+      <div class="panel-header">
+        <div>
+          <h3 id="detailLedgerTitle">Detailed interaction ledger</h3>
+          <span class="analysis-hint" id="detailLedgerScope">All available illustrative records</span>
+        </div>
+        <div class="ledger-tools">
+          <label class="page-size-label" for="detailPageSize">Rows
+            <select id="detailPageSize">
+              <option value="6">6</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-scroll" tabindex="0" aria-label="Scrollable detailed interaction records">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Interaction</th>
+              <th scope="col">Date &amp; time</th>
+              <th scope="col">Channel</th>
+              <th scope="col">Queue</th>
+              <th scope="col">Intent</th>
+              <th scope="col">Outcome</th>
+              <th scope="col">Sentiment</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Agent</th>
+            </tr>
+          </thead>
+          <tbody id="detailLedgerRows"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="detailPagination">
+        <span class="pagination-status" id="detailPageStatus">Page 1 of 1</span>
+        <div class="pagination-actions">
+          <button class="pagination-button" type="button" data-page-action="previous">Previous</button>
+          <button class="pagination-button" type="button" data-page-action="next">Next</button>
+        </div>
+      </div>
+    </section>
+  </section>
+</main>
+
+<footer class="report-footer shell">
+  <div>PACIFIC Contact Center Operations</div>
+  <div>Illustrative operational dataset &middot; 10 July 2026</div>
+</footer>
+
+<div class="metric-drawer-shell" id="metricDrawer" hidden>
+  <button class="metric-drawer-backdrop" type="button" data-drawer-close aria-label="Close metric calculation"></button>
+  <aside class="metric-drawer" role="dialog" aria-modal="true" aria-labelledby="metricDrawerTitle">
+    <button class="drawer-close" type="button" data-drawer-close aria-label="Close metric calculation">&times;</button>
+    <div class="detail-label">Metric calculation</div>
+    <h2 id="metricDrawerTitle" tabindex="-1">Metric</h2>
+    <div id="metricDrawerContent"></div>
+  </aside>
+</div>
+<div class="sr-only" id="reportUpdateStatus" aria-live="polite"></div>
+
+<script id="pacificData" type="application/json">
+{
+  "brand": "Pacific",
+  "illustrative": true,
+  "generatedAt": "10 Jul 2026, 14:42:18",
+  "periodEnd": "2026-07-10T23:59:59+08:00",
+  "live": {
+    "agents": {"available":18,"engaged":22,"wrap":5,"offline":3,"configured":48},
+    "queues": [
+      {"name":"Customer Care","waiting":5,"active":9,"longest":"02:18","serviceLevel":88.6,"abandonRate":3.9},
+      {"name":"Billing","waiting":3,"active":6,"longest":"03:42","serviceLevel":79.4,"abandonRate":7.2},
+      {"name":"Technical Support","waiting":3,"active":8,"longest":"03:16","serviceLevel":81.8,"abandonRate":6.1},
+      {"name":"Retention","waiting":1,"active":4,"longest":"01:08","serviceLevel":92.1,"abandonRate":2.4}
+    ],
+    "interactions": [
+      {"id":"PC-78421","channel":"Voice","queue":"Billing","agent":"A. Santos","duration":"08:14","sentiment":"Concerned"},
+      {"id":"PC-78419","channel":"Chat","queue":"Customer Care","agent":"M. Reyes","duration":"05:26","sentiment":"Positive"},
+      {"id":"PC-78417","channel":"WhatsApp","queue":"Technical Support","agent":"L. Cruz","duration":"11:03","sentiment":"Negative"},
+      {"id":"PC-78415","channel":"Voice","queue":"Customer Care","agent":"K. Lim","duration":"03:48","sentiment":"Neutral"},
+      {"id":"PC-78413","channel":"Email","queue":"Retention","agent":"J. Tan","duration":"06:31","sentiment":"Positive"},
+      {"id":"PC-78410","channel":"SMS","queue":"Billing","agent":"P. Garcia","duration":"04:12","sentiment":"Concerned"},
+      {"id":"PC-78408","channel":"Chat","queue":"Technical Support","agent":"R. Ong","duration":"09:45","sentiment":"Neutral"},
+      {"id":"PC-78405","channel":"Voice","queue":"Customer Care","agent":"S. Dela Cruz","duration":"07:22","sentiment":"Positive"}
+    ]
+  },
+  "insights": {
+    "period7": {
+      "label":"4 - 10 July 2026",
+      "interactions":5181,
+      "aht":"06:42",
+      "fcr":78.4,
+      "csat":91.6,
+      "productivity":7.8
+    },
+    "channels": [
+      {"channel":"Voice","value":2034,"color":"#1b7880"},
+      {"channel":"Chat","value":1268,"color":"#3c6e91"},
+      {"channel":"WhatsApp","value":842,"color":"#3e7b5f"},
+      {"channel":"Email","value":614,"color":"#d69a2d"},
+      {"channel":"SMS","value":327,"color":"#d75c50"},
+      {"channel":"Broadcast","value":96,"color":"#775f8f"}
+    ],
+    "daily": [
+      {"label":"04 Jul","Voice":268,"Chat":154,"WhatsApp":101,"Email":79,"SMS":39,"Broadcast":12},
+      {"label":"05 Jul","Voice":241,"Chat":139,"WhatsApp":92,"Email":72,"SMS":34,"Broadcast":9},
+      {"label":"06 Jul","Voice":286,"Chat":178,"WhatsApp":116,"Email":84,"SMS":45,"Broadcast":15},
+      {"label":"07 Jul","Voice":309,"Chat":196,"WhatsApp":131,"Email":91,"SMS":48,"Broadcast":14},
+      {"label":"08 Jul","Voice":318,"Chat":208,"WhatsApp":138,"Email":97,"SMS":52,"Broadcast":16},
+      {"label":"09 Jul","Voice":327,"Chat":214,"WhatsApp":143,"Email":101,"SMS":57,"Broadcast":17},
+      {"label":"10 Jul","Voice":285,"Chat":179,"WhatsApp":121,"Email":90,"SMS":52,"Broadcast":13}
+    ],
+    "period30": {
+      "label":"11 June - 10 July 2026",
+      "interactions":21642,
+      "aht":"06:51",
+      "fcr":77.1,
+      "csat":90.8,
+      "productivity":7.6,
+      "points":[
+        {"label":"11-15 Jun","total":3338},
+        {"label":"16-20 Jun","total":3524},
+        {"label":"21-25 Jun","total":3617},
+        {"label":"26-30 Jun","total":3742},
+        {"label":"01-05 Jul","total":3659},
+        {"label":"06-10 Jul","total":3762}
+      ],
+      "channels":[
+        {"channel":"Voice","value":8586,"color":"#1b7880"},
+        {"channel":"Chat","value":5184,"color":"#3c6e91"},
+        {"channel":"WhatsApp","value":3488,"color":"#3e7b5f"},
+        {"channel":"Email","value":2519,"color":"#d69a2d"},
+        {"channel":"SMS","value":1398,"color":"#d75c50"},
+        {"channel":"Broadcast","value":467,"color":"#775f8f"}
+      ]
+    },
+    "queueProfiles": {
+      "Customer Care": {
+        "share":0.323,
+        "7d":{"aht":"06:19","fcr":82.1,"csat":93.4,"productivity":8.2},
+        "30d":{"aht":"06:27","fcr":80.9,"csat":92.8,"productivity":8.0}
+      },
+      "Billing": {
+        "share":0.235,
+        "7d":{"aht":"07:14","fcr":74.6,"csat":88.7,"productivity":7.0},
+        "30d":{"aht":"07:21","fcr":73.8,"csat":88.1,"productivity":6.9}
+      },
+      "Technical Support": {
+        "share":0.287,
+        "7d":{"aht":"07:08","fcr":76.2,"csat":90.1,"productivity":7.2},
+        "30d":{"aht":"07:17","fcr":75.4,"csat":89.6,"productivity":7.1}
+      },
+      "Retention": {
+        "share":0.155,
+        "7d":{"aht":"06:31","fcr":81.9,"csat":94.0,"productivity":8.0},
+        "30d":{"aht":"06:39","fcr":80.7,"csat":93.2,"productivity":7.8}
+      }
+    },
+    "scorecards": [
+      {"agent":"A. Santos","queue":"Billing","interactions":128,"aht":"06:18","fcr":82.4,"csat":94.1,"productivity":8.6,"quality":92},
+      {"agent":"M. Reyes","queue":"Customer Care","interactions":121,"aht":"06:36","fcr":80.8,"csat":93.7,"productivity":8.2,"quality":91},
+      {"agent":"L. Cruz","queue":"Technical Support","interactions":116,"aht":"07:04","fcr":76.9,"csat":90.5,"productivity":7.5,"quality":88},
+      {"agent":"K. Lim","queue":"Customer Care","interactions":113,"aht":"06:49","fcr":79.1,"csat":92.2,"productivity":7.9,"quality":90},
+      {"agent":"J. Tan","queue":"Retention","interactions":108,"aht":"06:57","fcr":77.6,"csat":91.4,"productivity":7.6,"quality":89},
+      {"agent":"P. Garcia","queue":"Billing","interactions":104,"aht":"07:12","fcr":74.8,"csat":88.9,"productivity":7.1,"quality":86}
+    ],
+    "timeBands":["00–03","03–06","06–09","09–12","12–15","15–18","18–21","21–24"],
+    "hourlyDemand":[
+      {"day":"Mon","values":[18,12,42,78,88,82,61,34]},
+      {"day":"Tue","values":[16,11,45,84,93,87,66,37]},
+      {"day":"Wed","values":[19,13,49,89,97,91,70,41]},
+      {"day":"Thu","values":[21,14,52,92,100,94,73,43]},
+      {"day":"Fri","values":[24,16,56,95,98,90,76,48]},
+      {"day":"Sat","values":[31,22,47,66,74,71,59,45]},
+      {"day":"Sun","values":[27,19,41,58,63,60,52,39]}
+    ],
+    "queuePerformance":[
+      {"queue":"Customer Care","interactions7d":1673,"interactions30d":6990,"sla7d":88.6,"sla30d":87.9},
+      {"queue":"Billing","interactions7d":1218,"interactions30d":5086,"sla7d":79.4,"sla30d":78.8},
+      {"queue":"Technical Support","interactions7d":1487,"interactions30d":6211,"sla7d":81.8,"sla30d":81.2},
+      {"queue":"Retention","interactions7d":803,"interactions30d":3355,"sla7d":92.1,"sla30d":91.7}
+    ],
+    "channelOutcomes":[
+      {"channel":"Voice","resolved":1566,"transferred":320,"abandoned":148},
+      {"channel":"Chat","resolved":1055,"transferred":160,"abandoned":53},
+      {"channel":"WhatsApp","resolved":704,"transferred":103,"abandoned":35},
+      {"channel":"Email","resolved":510,"transferred":82,"abandoned":22},
+      {"channel":"SMS","resolved":265,"transferred":47,"abandoned":15},
+      {"channel":"Broadcast","resolved":83,"transferred":10,"abandoned":3}
+    ],
+    "details":[
+      {"id":"PC-78462","occurredAt":"2026-07-10T21:18:00+08:00","displayDate":"10 Jul, 21:18","day":"Fri","timeBand":"21–24","channel":"Voice","queue":"Billing","agent":"A. Santos","intent":"Payment dispute","outcome":"Resolved","sentiment":"Concerned","duration":"08:21"},
+      {"id":"PC-78458","occurredAt":"2026-07-10T19:44:00+08:00","displayDate":"10 Jul, 19:44","day":"Fri","timeBand":"18–21","channel":"Chat","queue":"Customer Care","agent":"M. Reyes","intent":"Delivery status","outcome":"Resolved","sentiment":"Positive","duration":"05:08"},
+      {"id":"PC-78451","occurredAt":"2026-07-10T17:12:00+08:00","displayDate":"10 Jul, 17:12","day":"Fri","timeBand":"15–18","channel":"WhatsApp","queue":"Technical Support","agent":"L. Cruz","intent":"Connectivity","outcome":"Transferred","sentiment":"Negative","duration":"11:42"},
+      {"id":"PC-78443","occurredAt":"2026-07-10T13:27:00+08:00","displayDate":"10 Jul, 13:27","day":"Fri","timeBand":"12–15","channel":"Email","queue":"Billing","agent":"P. Garcia","intent":"Invoice copy","outcome":"Resolved","sentiment":"Neutral","duration":"06:05"},
+      {"id":"PC-78439","occurredAt":"2026-07-10T10:06:00+08:00","displayDate":"10 Jul, 10:06","day":"Fri","timeBand":"09–12","channel":"SMS","queue":"Retention","agent":"J. Tan","intent":"Plan options","outcome":"Resolved","sentiment":"Positive","duration":"03:46"},
+      {"id":"PC-78431","occurredAt":"2026-07-10T07:51:00+08:00","displayDate":"10 Jul, 07:51","day":"Fri","timeBand":"06–09","channel":"Broadcast","queue":"Customer Care","agent":"S. Dela Cruz","intent":"Service notice","outcome":"Resolved","sentiment":"Neutral","duration":"00:42"},
+      {"id":"PC-78418","occurredAt":"2026-07-09T20:33:00+08:00","displayDate":"9 Jul, 20:33","day":"Thu","timeBand":"18–21","channel":"Voice","queue":"Technical Support","agent":"R. Ong","intent":"Device setup","outcome":"Transferred","sentiment":"Concerned","duration":"12:14"},
+      {"id":"PC-78411","occurredAt":"2026-07-09T16:48:00+08:00","displayDate":"9 Jul, 16:48","day":"Thu","timeBand":"15–18","channel":"Chat","queue":"Billing","agent":"A. Santos","intent":"Refund status","outcome":"Resolved","sentiment":"Positive","duration":"04:58"},
+      {"id":"PC-78402","occurredAt":"2026-07-09T11:22:00+08:00","displayDate":"9 Jul, 11:22","day":"Thu","timeBand":"09–12","channel":"WhatsApp","queue":"Customer Care","agent":"M. Reyes","intent":"Address change","outcome":"Resolved","sentiment":"Positive","duration":"06:17"},
+      {"id":"PC-78396","occurredAt":"2026-07-08T22:09:00+08:00","displayDate":"8 Jul, 22:09","day":"Wed","timeBand":"21–24","channel":"Email","queue":"Retention","agent":"J. Tan","intent":"Cancellation request","outcome":"Transferred","sentiment":"Concerned","duration":"09:31"},
+      {"id":"PC-78385","occurredAt":"2026-07-08T18:41:00+08:00","displayDate":"8 Jul, 18:41","day":"Wed","timeBand":"18–21","channel":"SMS","queue":"Technical Support","agent":"L. Cruz","intent":"Activation code","outcome":"Resolved","sentiment":"Positive","duration":"04:06"},
+      {"id":"PC-78372","occurredAt":"2026-07-08T14:16:00+08:00","displayDate":"8 Jul, 14:16","day":"Wed","timeBand":"12–15","channel":"Voice","queue":"Customer Care","agent":"K. Lim","intent":"Order correction","outcome":"Resolved","sentiment":"Neutral","duration":"07:44"},
+      {"id":"PC-78360","occurredAt":"2026-07-07T19:05:00+08:00","displayDate":"7 Jul, 19:05","day":"Tue","timeBand":"18–21","channel":"Chat","queue":"Technical Support","agent":"R. Ong","intent":"Login recovery","outcome":"Resolved","sentiment":"Positive","duration":"05:52"},
+      {"id":"PC-78354","occurredAt":"2026-07-07T15:37:00+08:00","displayDate":"7 Jul, 15:37","day":"Tue","timeBand":"15–18","channel":"WhatsApp","queue":"Billing","agent":"P. Garcia","intent":"Charge clarification","outcome":"Resolved","sentiment":"Neutral","duration":"07:03"},
+      {"id":"PC-78349","occurredAt":"2026-07-07T09:43:00+08:00","displayDate":"7 Jul, 09:43","day":"Tue","timeBand":"09–12","channel":"Voice","queue":"Retention","agent":"J. Tan","intent":"Renewal terms","outcome":"Abandoned","sentiment":"Negative","duration":"02:18"},
+      {"id":"PC-78333","occurredAt":"2026-07-06T17:28:00+08:00","displayDate":"6 Jul, 17:28","day":"Mon","timeBand":"15–18","channel":"Email","queue":"Customer Care","agent":"M. Reyes","intent":"Returns policy","outcome":"Resolved","sentiment":"Positive","duration":"05:44"},
+      {"id":"PC-78327","occurredAt":"2026-07-06T12:54:00+08:00","displayDate":"6 Jul, 12:54","day":"Mon","timeBand":"12–15","channel":"SMS","queue":"Billing","agent":"A. Santos","intent":"Balance enquiry","outcome":"Resolved","sentiment":"Neutral","duration":"03:37"},
+      {"id":"PC-78312","occurredAt":"2026-07-05T20:11:00+08:00","displayDate":"5 Jul, 20:11","day":"Sun","timeBand":"18–21","channel":"Voice","queue":"Technical Support","agent":"L. Cruz","intent":"Network outage","outcome":"Transferred","sentiment":"Negative","duration":"13:20"},
+      {"id":"PC-78301","occurredAt":"2026-07-05T11:08:00+08:00","displayDate":"5 Jul, 11:08","day":"Sun","timeBand":"09–12","channel":"Chat","queue":"Customer Care","agent":"K. Lim","intent":"Delivery window","outcome":"Resolved","sentiment":"Positive","duration":"04:43"},
+      {"id":"PC-78286","occurredAt":"2026-07-04T16:36:00+08:00","displayDate":"4 Jul, 16:36","day":"Sat","timeBand":"15–18","channel":"WhatsApp","queue":"Retention","agent":"J. Tan","intent":"Plan comparison","outcome":"Resolved","sentiment":"Positive","duration":"06:38"},
+      {"id":"PC-78273","occurredAt":"2026-07-03T13:42:00+08:00","displayDate":"3 Jul, 13:42","day":"Fri","timeBand":"12–15","channel":"Email","queue":"Billing","agent":"P. Garcia","intent":"Tax breakdown","outcome":"Resolved","sentiment":"Neutral","duration":"07:26"},
+      {"id":"PC-78254","occurredAt":"2026-07-01T08:18:00+08:00","displayDate":"1 Jul, 08:18","day":"Wed","timeBand":"06–09","channel":"Voice","queue":"Customer Care","agent":"M. Reyes","intent":"Account access","outcome":"Resolved","sentiment":"Positive","duration":"06:11"},
+      {"id":"PC-78231","occurredAt":"2026-06-29T18:47:00+08:00","displayDate":"29 Jun, 18:47","day":"Mon","timeBand":"18–21","channel":"SMS","queue":"Technical Support","agent":"R. Ong","intent":"Device activation","outcome":"Resolved","sentiment":"Positive","duration":"04:12"},
+      {"id":"PC-78208","occurredAt":"2026-06-27T10:25:00+08:00","displayDate":"27 Jun, 10:25","day":"Sat","timeBand":"09–12","channel":"Chat","queue":"Billing","agent":"A. Santos","intent":"Payment method","outcome":"Resolved","sentiment":"Neutral","duration":"05:36"},
+      {"id":"PC-78184","occurredAt":"2026-06-24T15:14:00+08:00","displayDate":"24 Jun, 15:14","day":"Wed","timeBand":"15–18","channel":"Voice","queue":"Retention","agent":"J. Tan","intent":"Save offer","outcome":"Resolved","sentiment":"Positive","duration":"08:57"},
+      {"id":"PC-78159","occurredAt":"2026-06-21T12:07:00+08:00","displayDate":"21 Jun, 12:07","day":"Sun","timeBand":"12–15","channel":"WhatsApp","queue":"Customer Care","agent":"K. Lim","intent":"Order tracking","outcome":"Resolved","sentiment":"Positive","duration":"05:29"},
+      {"id":"PC-78132","occurredAt":"2026-06-19T09:38:00+08:00","displayDate":"19 Jun, 09:38","day":"Fri","timeBand":"09–12","channel":"Email","queue":"Technical Support","agent":"L. Cruz","intent":"Configuration guide","outcome":"Transferred","sentiment":"Concerned","duration":"10:44"},
+      {"id":"PC-78104","occurredAt":"2026-06-16T17:52:00+08:00","displayDate":"16 Jun, 17:52","day":"Tue","timeBand":"15–18","channel":"Broadcast","queue":"Customer Care","agent":"S. Dela Cruz","intent":"Maintenance notice","outcome":"Resolved","sentiment":"Neutral","duration":"00:39"},
+      {"id":"PC-78077","occurredAt":"2026-06-14T20:16:00+08:00","displayDate":"14 Jun, 20:16","day":"Sun","timeBand":"18–21","channel":"Voice","queue":"Billing","agent":"P. Garcia","intent":"Late fee review","outcome":"Abandoned","sentiment":"Negative","duration":"01:47"},
+      {"id":"PC-78049","occurredAt":"2026-06-12T06:44:00+08:00","displayDate":"12 Jun, 06:44","day":"Fri","timeBand":"06–09","channel":"Chat","queue":"Technical Support","agent":"R. Ong","intent":"Password reset","outcome":"Resolved","sentiment":"Positive","duration":"04:24"}
+    ],
+    "evidence": [
+      {"id":"PC-78394","occurredAt":"2026-07-10T14:06:03+08:00","displayDate":"10 Jul 2026, 14:06","channel":"Voice","queue":"Billing","agent":"A. Santos","consent":"Captured","recording":true,"recordingSample":true,"recordingDuration":"00:02","transcript":"Customer reported a duplicate charge. Identity verification was completed, the duplicate entry was confirmed and an adjustment reference was issued.","summary":"Duplicate charge reviewed; adjustment confirmed after identity verification.","consentRecord":"Voice recording consent captured at 14:06:03 through the call disclosure prompt."},
+      {"id":"PC-78388","occurredAt":"2026-07-10T12:15:42+08:00","displayDate":"10 Jul 2026, 12:15","channel":"Chat","queue":"Customer Care","agent":"M. Reyes","consent":"Captured","recording":false,"transcript":"Customer requested delivery status. The agent verified the order, supplied the current tracking event and shared the carrier link.","summary":"Delivery status clarified and tracking link issued during first contact.","consentRecord":"Chat data-processing consent retained with session PC-78388."},
+      {"id":"PC-78371","occurredAt":"2026-07-09T16:34:11+08:00","displayDate":"9 Jul 2026, 16:34","channel":"WhatsApp","queue":"Technical Support","agent":"L. Cruz","consent":"Captured","recording":false,"transcript":"Customer described intermittent connectivity. The agent checked device settings, guided a network reset and confirmed restored service.","summary":"Connectivity issue isolated to device settings; guided reset completed.","consentRecord":"WhatsApp channel consent captured before diagnostic exchange."},
+      {"id":"PC-78341","occurredAt":"2026-07-08T11:22:09+08:00","displayDate":"8 Jul 2026, 11:22","channel":"Email","queue":"Billing","agent":"P. Garcia","consent":"Captured","recording":false,"log":"Inbound email received with invoice reference. Reply delivered the invoice copy and explained each tax line item.","summary":"Invoice copy delivered and tax line items clarified.","consentRecord":"Email service consent recorded from the customer profile preference."},
+      {"id":"PC-78355","occurredAt":"2026-07-06T09:48:27+08:00","displayDate":"6 Jul 2026, 09:48","channel":"SMS","queue":"Retention","agent":"J. Tan","consent":"Pending","recording":false,"log":"Customer requested account options by SMS. Available terms were returned and a follow-up preference was recorded.","summary":"Account options reviewed; customer requested a follow-up after billing cycle close.","consentRecord":"SMS consent renewal is pending; no promotional follow-up is enabled."},
+      {"id":"PC-78330","occurredAt":"2026-07-04T08:32:15+08:00","displayDate":"4 Jul 2026, 08:32","channel":"Broadcast","queue":"Customer Care","agent":"S. Dela Cruz","consent":"Captured","recording":false,"log":"Service notice batch delivered to the consented audience. Delivery, engagement and opt-out events were retained.","summary":"Service notice delivery completed with engagement and opt-out records retained.","consentRecord":"Broadcast audience consent verified against the active subscription list."},
+      {"id":"PC-78121","occurredAt":"2026-06-26T16:42:08+08:00","displayDate":"26 Jun 2026, 16:42","channel":"SMS","queue":"Technical Support","agent":"L. Cruz","consent":"Captured","recording":false,"log":"Customer reported an activation code error by SMS. A replacement code was issued after device and account verification.","summary":"Activation code replaced after device and account checks.","consentRecord":"Transactional SMS consent was active when the replacement code was issued."},
+      {"id":"PC-78176","occurredAt":"2026-06-20T10:18:44+08:00","displayDate":"20 Jun 2026, 10:18","channel":"Voice","queue":"Customer Care","agent":"K. Lim","consent":"Captured","recording":true,"recordingSample":true,"recordingDuration":"00:02","transcript":"Customer asked to change a delivery address before dispatch. The agent verified the account and confirmed the updated destination.","summary":"Delivery address updated before dispatch after account verification.","consentRecord":"Voice recording consent captured through the call disclosure prompt for PC-78176."}
+    ]
+  }
+}
+</script>
+<script>
+  (function () {
+    'use strict';
+
+    var data = JSON.parse(document.getElementById('pacificData').textContent);
+    var currentView = 'live';
+    var currentRange = '7d';
+    var currentReportQueue = 'all';
+    var currentAudioUrl = null;
+    var currentReportSnapshot = null;
+    var drawerReturnFocus = null;
+    var analysisDrilldown = { channel: null, day: null, timeBand: null };
+    var detailPage = 1;
+    var detailPageSize = 6;
+    var channelOrder = ['Voice', 'Chat', 'WhatsApp', 'Email', 'SMS', 'Broadcast'];
+    var channelColors = {
+      Voice: '#1b7880',
+      Chat: '#3c6e91',
+      WhatsApp: '#3e7b5f',
+      Email: '#d69a2d',
+      SMS: '#d75c50',
+      Broadcast: '#775f8f'
+    };
+
+    function buildMetricExplanation(metricKey, snapshot) {
+      var rangeLabel = snapshot.rangeLabel || 'Live snapshot';
+      var queueLabel = snapshot.queueLabel || 'All queues';
+      var scope = rangeLabel + ' / ' + queueLabel;
+      var channels = snapshot.channels || [];
+      var liveQueues = snapshot.liveQueues || [];
+      var agents = snapshot.agents || {};
+      var explanation = {
+        title: metricKey,
+        value: 'Not available',
+        definition: '',
+        formula: null,
+        calculation: null,
+        scope: scope,
+        note: ''
+      };
+
+      if (metricKey === 'interactions') {
+        explanation.title = 'Interactions';
+        explanation.value = Number(snapshot.interactions).toLocaleString('en-US');
+        explanation.definition = 'Total interactions included in the active reporting scope.';
+        explanation.formula = 'Sum of included channel interactions';
+        explanation.calculation = channels.map(function (row) {
+          return Number(row.value).toLocaleString('en-US');
+        }).join(' + ') + ' = ' + explanation.value;
+        explanation.note = snapshot.isAllocated
+          ? 'Queue-scoped values are proportionally allocated within this illustrative dataset.'
+          : 'Channel values are embedded illustrative observations.';
+      } else if (metricKey === 'aht') {
+        explanation.title = 'Average handle time';
+        explanation.value = snapshot.aht || 'Not available';
+        explanation.definition = 'Average time spent handling an interaction, including active handling and after-contact work.';
+        explanation.formula = 'Total handle time / handled interactions';
+        explanation.note = 'The illustrative dataset contains the reported value but not raw handle-time events, so numerator and denominator values are not displayed.';
+      } else if (metricKey === 'fcr') {
+        explanation.title = 'First-contact resolution';
+        explanation.value = Number(snapshot.fcr).toFixed(1) + '%';
+        explanation.definition = 'Share of eligible interactions resolved without a repeat contact.';
+        explanation.formula = 'First-contact resolved interactions / eligible interactions';
+        explanation.note = 'The illustrative dataset does not include contact-linkage records required to reproduce the numerator and denominator.';
+      } else if (metricKey === 'csat') {
+        explanation.title = 'Customer satisfaction';
+        explanation.value = Number(snapshot.csat).toFixed(1) + '%';
+        explanation.definition = 'Share of positive customer survey responses in the active scope.';
+        explanation.formula = 'Positive survey responses / valid survey responses';
+        explanation.note = 'The illustrative dataset does not include response-level survey records required to reproduce this rate.';
+      } else if (metricKey === 'productivity') {
+        explanation.title = 'Productivity';
+        explanation.value = Number(snapshot.productivity).toFixed(1) + ' / hr';
+        explanation.definition = 'Average interactions handled per agent hour.';
+        explanation.formula = 'Handled interactions / staffed agent hours';
+        explanation.note = 'The illustrative dataset does not include agent-hour records required to reproduce this rate.';
+      } else if (metricKey === 'liveActive') {
+        explanation.title = 'Active interactions';
+        explanation.value = liveQueues.reduce(function (sum, row) { return sum + row.active; }, 0).toLocaleString('en-US');
+        explanation.definition = 'Interactions currently active across all queues.';
+        explanation.formula = 'Sum of active interactions by queue';
+        explanation.calculation = liveQueues.map(function (row) { return row.active; }).join(' + ') + ' = ' + explanation.value;
+        explanation.note = 'Calculated from the current illustrative queue snapshot.';
+      } else if (metricKey === 'liveWaiting') {
+        explanation.title = 'Waiting in queue';
+        explanation.value = liveQueues.reduce(function (sum, row) { return sum + row.waiting; }, 0).toLocaleString('en-US');
+        explanation.definition = 'Interactions waiting for an available agent.';
+        explanation.formula = 'Sum of waiting interactions by queue';
+        explanation.calculation = liveQueues.map(function (row) { return row.waiting; }).join(' + ') + ' = ' + explanation.value;
+        explanation.note = 'Calculated from the current illustrative queue snapshot.';
+      } else if (metricKey === 'liveLongest') {
+        explanation.title = 'Longest wait';
+        explanation.value = snapshot.longest || 'Not available';
+        explanation.definition = 'Longest current wait among included queues.';
+        explanation.formula = 'Maximum queue wait';
+        explanation.calculation = 'max(' + liveQueues.map(function (row) { return row.longest; }).join(', ') + ') = ' + explanation.value;
+        explanation.note = 'Calculated from the current illustrative queue snapshot.';
+      } else if (metricKey === 'liveAvailability') {
+        explanation.title = 'Agent availability';
+        explanation.value = (agents.available / agents.configured * 100).toFixed(1) + '%';
+        explanation.definition = 'Share of configured agents currently available for a new interaction.';
+        explanation.formula = 'Available agents / configured agents';
+        explanation.calculation = agents.available + ' / ' + agents.configured + ' = ' + explanation.value;
+        explanation.note = 'Calculated from the current illustrative agent snapshot.';
+      } else if (metricKey === 'liveServiceLevel') {
+        explanation.title = 'Service level';
+        explanation.value = Number(snapshot.serviceLevel).toFixed(1) + '%';
+        explanation.definition = 'Share of interactions answered within the configured response target.';
+        explanation.formula = 'Interactions answered within target / eligible offered interactions';
+        explanation.note = 'The illustrative dataset contains the reported value but not interaction-level target timestamps.';
+      }
+      return explanation;
+    }
+
+    function buildChartTooltipPayload(point, previousPoint) {
+      var change = null;
+      if (previousPoint && Number(previousPoint.total) > 0) {
+        var percent = (Number(point.total) - Number(previousPoint.total)) / Number(previousPoint.total) * 100;
+        change = (percent > 0 ? '+' : '') + percent.toFixed(1) + '%';
+      }
+      return {
+        label: point.label,
+        total: Number(point.total).toLocaleString('en-US'),
+        change: change,
+        channels: (point.channels || []).map(function (row) {
+          return { channel: row.channel, value: Number(row.value).toLocaleString('en-US') };
+        })
+      };
+    }
+
+    function buildDonutSegments(channels) {
+      var total = channels.reduce(function (sum, row) { return sum + row.value; }, 0);
+      var cursor = 0;
+      return channels.map(function (row, index) {
+        var rawShare = row.value / total * 100;
+        var share = +rawShare.toFixed(1);
+        var start = cursor;
+        var end = index === channels.length - 1 ? 360 : +(cursor + rawShare * 3.6).toFixed(2);
+        cursor = end;
+        return {
+          channel: row.channel,
+          value: row.value,
+          color: row.color,
+          share: share,
+          start: start,
+          end: end,
+          sweep: +((end - start) / 3.6).toFixed(4)
+        };
+      });
+    }
+
+    function filterDrilldownRows(rows, filters) {
+      var rangeDays = filters.range === '30d' ? 30 : 7;
+      var end = Date.parse(filters.periodEnd);
+      var start = end - rangeDays * 24 * 60 * 60 * 1000 + 1;
+      return rows.filter(function (row) {
+        var occurredAt = Date.parse(row.occurredAt);
+        return occurredAt >= start && occurredAt <= end
+          && (filters.queue === 'all' || row.queue === filters.queue)
+          && (!filters.channel || row.channel === filters.channel)
+          && (!filters.day || row.day === filters.day)
+          && (!filters.timeBand || row.timeBand === filters.timeBand);
+      });
+    }
+
+    function paginateRows(rows, page, pageSize) {
+      var totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+      var safePage = Math.min(Math.max(1, page), totalPages);
+      var start = (safePage - 1) * pageSize;
+      return {
+        rows: rows.slice(start, start + pageSize),
+        page: safePage,
+        totalPages: totalPages,
+        total: rows.length,
+        start: rows.length ? start + 1 : 0,
+        end: Math.min(start + pageSize, rows.length)
+      };
+    }
+
+    function isReducedMotion() {
+      return typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function animateElement(element, keyframes, options) {
+      if (isReducedMotion() || !element || typeof element.animate !== 'function') return null;
+      return element.animate(keyframes, options);
+    }
+
+    function getMetricSnapshot(metricKey) {
+      if (metricKey.indexOf('live') === 0) {
+        return {
+          rangeLabel: 'Live snapshot',
+          queueLabel: 'All queues',
+          liveQueues: data.live.queues,
+          agents: data.live.agents,
+          longest: data.live.queues.reduce(function (current, row) {
+            return row.longest > current ? row.longest : current;
+          }, '00:00'),
+          serviceLevel: 83.4
+        };
+      }
+      return currentReportSnapshot;
+    }
+
+    function appendDrawerSection(host, heading, content, useCode) {
+      if (content == null || content === '') return;
+      var section = document.createElement('section');
+      section.className = 'drawer-section';
+      var title = document.createElement('h3');
+      title.textContent = heading;
+      var body = document.createElement(useCode ? 'code' : 'p');
+      body.textContent = content;
+      section.append(title, body);
+      host.appendChild(section);
+    }
+
+    function renderMetricDrawer(explanation) {
+      document.getElementById('metricDrawerTitle').textContent = explanation.title;
+      var host = document.getElementById('metricDrawerContent');
+      host.replaceChildren();
+      var value = document.createElement('div');
+      value.className = 'drawer-value';
+      value.textContent = explanation.value;
+      host.appendChild(value);
+      appendDrawerSection(host, 'Definition', explanation.definition, false);
+      appendDrawerSection(host, 'Formula', explanation.formula, true);
+      appendDrawerSection(host, 'Current calculation', explanation.calculation, true);
+      appendDrawerSection(host, 'Reporting scope', explanation.scope, false);
+      appendDrawerSection(host, 'Data note', explanation.note, false);
+    }
+
+    function openMetricDrawer(metricKey) {
+      var snapshot = getMetricSnapshot(metricKey);
+      if (!snapshot) return;
+      var shell = document.getElementById('metricDrawer');
+      drawerReturnFocus = document.activeElement;
+      renderMetricDrawer(buildMetricExplanation(metricKey, snapshot));
+      shell.hidden = false;
+      requestAnimationFrame(function () {
+        shell.classList.add('is-open');
+        document.getElementById('metricDrawerTitle').focus();
+      });
+    }
+
+    function closeMetricDrawer() {
+      var shell = document.getElementById('metricDrawer');
+      shell.classList.remove('is-open');
+      var finish = function () {
+        shell.hidden = true;
+        if (drawerReturnFocus && typeof drawerReturnFocus.focus === 'function') drawerReturnFocus.focus();
+      };
+      if (isReducedMotion()) finish();
+      else setTimeout(finish, 190);
+    }
+
+    function trapDrawerFocus(event) {
+      if (event.key !== 'Tab') return;
+      var drawer = document.querySelector('.metric-drawer');
+      var focusable = Array.from(drawer.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) return;
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      var currentIndex = focusable.indexOf(document.activeElement);
+      if (currentIndex === -1) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    function switchView(name) {
+      currentView = name;
+      document.querySelectorAll('.tab-button').forEach(function (button) {
+        var isSelected = button.dataset.tab === name;
+        button.setAttribute('aria-selected', String(isSelected));
+        button.tabIndex = isSelected ? 0 : -1;
+      });
+      document.getElementById('liveView').classList.toggle('active', name === 'live');
+      document.getElementById('insightsView').classList.toggle('active', name === 'insights');
+    }
+
+    function renderQueues() {
+      var host = document.getElementById('queueRows');
+      host.replaceChildren();
+      var selectedQueue = document.getElementById('queueFilter').value;
+      data.live.queues.forEach(function (queue) {
+        var row = document.createElement('tr');
+        row.dataset.queue = queue.name;
+        row.classList.toggle('selected', queue.name === selectedQueue);
+        var values = [
+          { text: queue.waiting, className: queue.waiting >= 3 ? 'number-risk' : '' },
+          { text: queue.active },
+          { text: queue.longest, className: queue.longest >= '03:00' ? 'number-risk' : '' },
+          { text: queue.serviceLevel.toFixed(1) + '%', className: queue.serviceLevel >= 85 ? 'number-good' : '' },
+          { text: queue.abandonRate.toFixed(1) + '%', className: queue.abandonRate >= 6 ? 'number-risk' : '' }
+        ];
+        var queueCell = document.createElement('td');
+        queueCell.className = 'text-left';
+        var selectButton = document.createElement('button');
+        selectButton.type = 'button';
+        selectButton.className = 'queue-select-button';
+        selectButton.textContent = queue.name;
+        selectButton.setAttribute('aria-pressed', String(queue.name === selectedQueue));
+        selectButton.addEventListener('click', function () {
+          document.getElementById('queueFilter').value = queue.name;
+          filterInteractions();
+          document.querySelectorAll('.queue-select-button').forEach(function (button) {
+            button.setAttribute('aria-pressed', String(button === selectButton));
+            button.closest('tr').classList.toggle('selected', button === selectButton);
+          });
+          announceReportUpdate(queue.name + ' queue selected. ' + getFilteredLiveInteractions().length + ' active interactions displayed.');
+        });
+        queueCell.appendChild(selectButton);
+        row.appendChild(queueCell);
+        values.forEach(function (value) {
+          var cell = document.createElement('td');
+          cell.textContent = value.text;
+          if (value.className) {
+            cell.className = value.className;
+          }
+          row.appendChild(cell);
+        });
+        host.appendChild(row);
+      });
+    }
+
+    function sentimentClass(sentiment) {
+      return sentiment.toLowerCase().replaceAll(' ', '-');
+    }
+
+    function activateSupervision(interactionId, action) {
+      var interaction = data.live.interactions.find(function (row) { return row.id === interactionId; });
+      var status = document.getElementById('supervisionStatus');
+      var labels = {
+        monitor: 'Monitoring',
+        whisper: 'Whisper coaching active for',
+        assist: 'Barge-in assistance active for'
+      };
+      status.classList.add('active');
+      status.querySelector('span:last-child').textContent =
+        labels[action] + ' ' + interaction.id + ' with ' + interaction.agent + ' in ' + interaction.queue;
+      document.querySelectorAll('#interactionRows tr').forEach(function (row) {
+        row.classList.toggle('selected', row.dataset.interaction === interactionId);
+      });
+    }
+
+    window.activateSupervision = activateSupervision;
+
+    function renderInteractions(rows) {
+      var host = document.getElementById('interactionRows');
+      host.replaceChildren();
+      rows.forEach(function (interaction) {
+        var row = document.createElement('tr');
+        row.dataset.interaction = interaction.id;
+        var fields = [
+          { text: interaction.id, className: 'queue-name' },
+          { text: interaction.channel },
+          { text: interaction.queue },
+          { text: interaction.agent },
+          { text: interaction.duration }
+        ];
+        fields.forEach(function (field, index) {
+          var cell = document.createElement('td');
+          cell.textContent = field.text;
+          if (field.className) {
+            cell.className = field.className;
+          }
+          if (index === 0) {
+            cell.classList.add('text-left');
+          }
+          row.appendChild(cell);
+        });
+
+        var sentimentCell = document.createElement('td');
+        var sentiment = document.createElement('span');
+        sentiment.className = 'sentiment ' + sentimentClass(interaction.sentiment);
+        sentiment.textContent = interaction.sentiment;
+        sentimentCell.appendChild(sentiment);
+        row.appendChild(sentimentCell);
+
+        var actionsCell = document.createElement('td');
+        var actions = document.createElement('div');
+        actions.className = 'action-group';
+        [
+          { key: 'monitor', label: 'Monitor' },
+          { key: 'whisper', label: 'Whisper' },
+          { key: 'assist', label: 'Assist' }
+        ].forEach(function (action) {
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'action';
+          button.dataset.action = action.key;
+          button.textContent = action.label;
+          button.addEventListener('click', function () {
+            activateSupervision(interaction.id, action.key);
+          });
+          actions.appendChild(button);
+        });
+        actionsCell.appendChild(actions);
+        row.appendChild(actionsCell);
+        host.appendChild(row);
+      });
+      document.getElementById('interactionCount').textContent = rows.length + ' displayed';
+    }
+
+    function getFilteredLiveInteractions() {
+      var selected = document.getElementById('queueFilter').value;
+      return selected === 'all'
+        ? data.live.interactions
+        : data.live.interactions.filter(function (row) { return row.queue === selected; });
+    }
+
+    function filterInteractions() {
+      renderInteractions(getFilteredLiveInteractions());
+      animateElement(document.getElementById('interactionRows'), [
+        { opacity: 0.35, transform: 'translateY(3px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 190, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+    }
+
+    function announceReportUpdate(message) {
+      document.getElementById('reportUpdateStatus').textContent = message;
+    }
+
+    function animateReportUpdate() {
+      animateElement(document.getElementById('insightsView'), [
+        { opacity: 0.55, transform: 'translateY(3px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+    }
+
+    function svgNode(name, attributes, text) {
+      var node = document.createElementNS('http://www.w3.org/2000/svg', name);
+      Object.keys(attributes || {}).forEach(function (key) {
+        node.setAttribute(key, String(attributes[key]));
+      });
+      if (text != null) {
+        node.textContent = text;
+      }
+      return node;
+    }
+
+    function getSevenDayPoints() {
+      return data.insights.daily.map(function (row) {
+        return {
+          label: row.label,
+          total: channelOrder.reduce(function (sum, channel) { return sum + row[channel]; }, 0),
+          channels: channelOrder.map(function (channel) {
+            return { channel: channel, value: row[channel], color: channelColors[channel] };
+          })
+        };
+      });
+    }
+
+    function renderVolumeChart(points) {
+      var host = document.getElementById('volumeChart');
+      var width = 900;
+      var height = 330;
+      var margin = { top: 24, right: 22, bottom: 46, left: 54 };
+      var innerWidth = width - margin.left - margin.right;
+      var innerHeight = height - margin.top - margin.bottom;
+      var maxValue = Math.max.apply(null, points.map(function (row) { return row.total; }));
+      var yMax = Math.ceil(maxValue / 200) * 200;
+      var x = function (index) {
+        return margin.left + (points.length === 1 ? 0 : index * innerWidth / (points.length - 1));
+      };
+      var y = function (value) {
+        return margin.top + innerHeight - value * innerHeight / yMax;
+      };
+      var path = points.map(function (row, index) {
+        return (index === 0 ? 'M' : 'L') + x(index).toFixed(1) + ' ' + y(row.total).toFixed(1);
+      }).join(' ');
+      var svg = svgNode('svg', {
+        viewBox: '0 0 ' + width + ' ' + height,
+        role: 'img',
+        'aria-label': 'Interaction volume trend for ' + points.length + ' reporting points'
+      });
+      var tooltip = document.createElement('div');
+      tooltip.className = 'chart-tooltip';
+      tooltip.id = 'chartTooltip';
+      tooltip.setAttribute('role', 'status');
+      tooltip.hidden = true;
+
+      for (var tick = 0; tick <= 4; tick += 1) {
+        var value = yMax * tick / 4;
+        var yPos = y(value);
+        svg.appendChild(svgNode('line', {
+          x1: margin.left,
+          x2: width - margin.right,
+          y1: yPos,
+          y2: yPos,
+          stroke: '#d6dfdc',
+          'stroke-width': 1
+        }));
+        svg.appendChild(svgNode('text', {
+          x: margin.left - 10,
+          y: yPos + 4,
+          fill: '#68777b',
+          'font-size': 11,
+          'text-anchor': 'end',
+          'font-family': 'Aptos, Calibri, sans-serif'
+        }, Math.round(value)));
+      }
+
+      points.forEach(function (row, index) {
+        svg.appendChild(svgNode('text', {
+          x: x(index),
+          y: height - 15,
+          fill: '#68777b',
+          'font-size': 11,
+          'text-anchor': 'middle',
+          'font-family': 'Aptos, Calibri, sans-serif'
+        }, row.label));
+      });
+
+      var areaPath = path
+        + ' L' + x(points.length - 1).toFixed(1) + ' ' + (margin.top + innerHeight)
+        + ' L' + x(0).toFixed(1) + ' ' + (margin.top + innerHeight) + ' Z';
+      svg.appendChild(svgNode('path', { d: areaPath, fill: '#d9eceb', opacity: 0.72 }));
+      svg.appendChild(svgNode('path', {
+        d: path,
+        fill: 'none',
+        stroke: '#1b7880',
+        'stroke-width': 3,
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round'
+      }));
+
+      var peakIndex = points.reduce(function (best, row, index) {
+        return row.total > points[best].total ? index : best;
+      }, 0);
+      var peak = points[peakIndex];
+      svg.appendChild(svgNode('line', {
+        x1: x(peakIndex),
+        x2: x(peakIndex),
+        y1: y(peak.total) - 11,
+        y2: margin.top + innerHeight,
+        stroke: '#9bb2ad',
+        'stroke-width': 1,
+        'stroke-dasharray': '4 5'
+      }));
+      svg.appendChild(svgNode('text', {
+        x: Math.min(width - 76, Math.max(76, x(peakIndex))),
+        y: Math.max(16, y(peak.total) - 18),
+        fill: '#103846',
+        'font-size': 11,
+        'font-weight': 700,
+        'text-anchor': 'middle',
+        'font-family': 'Aptos, Calibri, sans-serif'
+      }, 'Peak ' + peak.total.toLocaleString('en-US')));
+
+      var guide = svgNode('line', {
+        x1: 0,
+        x2: 0,
+        y1: margin.top,
+        y2: margin.top + innerHeight,
+        stroke: '#1b7880',
+        'stroke-width': 1,
+        'stroke-dasharray': '3 4',
+        visibility: 'hidden'
+      });
+      var focusRing = svgNode('circle', {
+        cx: 0,
+        cy: 0,
+        r: 9,
+        fill: 'none',
+        stroke: '#d69a2d',
+        'stroke-width': 2,
+        visibility: 'hidden'
+      });
+      svg.append(guide, focusRing);
+
+      function hideTooltip() {
+        tooltip.hidden = true;
+        guide.setAttribute('visibility', 'hidden');
+        focusRing.setAttribute('visibility', 'hidden');
+      }
+
+      function showTooltip(row, index) {
+        var payload = buildChartTooltipPayload(row, index > 0 ? points[index - 1] : null);
+        tooltip.replaceChildren();
+        var header = document.createElement('strong');
+        var label = document.createElement('span');
+        label.textContent = payload.label + ' · ' + payload.total;
+        header.appendChild(label);
+        if (payload.change) {
+          var change = document.createElement('span');
+          change.className = 'chart-tooltip-change';
+          change.textContent = payload.change;
+          header.appendChild(change);
+        }
+        tooltip.appendChild(header);
+        if (payload.channels.length) {
+          var list = document.createElement('div');
+          list.className = 'chart-tooltip-list';
+          payload.channels.forEach(function (channel) {
+            var item = document.createElement('span');
+            var name = document.createElement('span');
+            var value = document.createElement('strong');
+            name.textContent = channel.channel;
+            value.textContent = channel.value;
+            item.append(name, value);
+            list.appendChild(item);
+          });
+          tooltip.appendChild(list);
+        }
+        tooltip.style.left = Math.max(18, Math.min(82, x(index) / width * 100)) + '%';
+        tooltip.style.top = Math.max(20, y(row.total) / height * 100) + '%';
+        tooltip.hidden = false;
+        guide.setAttribute('x1', x(index));
+        guide.setAttribute('x2', x(index));
+        guide.setAttribute('visibility', 'visible');
+        focusRing.setAttribute('cx', x(index));
+        focusRing.setAttribute('cy', y(row.total));
+        focusRing.setAttribute('visibility', 'visible');
+        animateElement(tooltip, [
+          { opacity: 0, transform: 'translate(-50%, calc(-100% - 6px))' },
+          { opacity: 1, transform: 'translate(-50%, calc(-100% - 12px))' }
+        ], { duration: 150, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+      }
+
+      points.forEach(function (row, index) {
+        var circle = svgNode('circle', {
+          class: 'chart-point',
+          cx: x(index),
+          cy: y(row.total),
+          r: 4,
+          fill: '#fbfcfa',
+          stroke: '#1b7880',
+          'stroke-width': 2,
+          tabindex: 0,
+          role: 'button',
+          'aria-label': row.label + ', ' + row.total.toLocaleString('en-US') + ' interactions'
+        });
+        circle.addEventListener('mouseenter', function () { showTooltip(row, index); });
+        circle.addEventListener('focus', function () { showTooltip(row, index); });
+        circle.addEventListener('click', function () { showTooltip(row, index); });
+        circle.addEventListener('mouseleave', hideTooltip);
+        circle.addEventListener('blur', hideTooltip);
+        svg.appendChild(circle);
+      });
+      host.replaceChildren(svg, tooltip);
+    }
+
+    function renderChannels(channels) {
+      var host = document.getElementById('channelBars');
+      host.replaceChildren();
+      var maxValue = Math.max.apply(null, channels.map(function (row) { return row.value; }));
+      var total = channels.reduce(function (sum, row) { return sum + row.value; }, 0);
+      channels.forEach(function (row) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'bar-row';
+        var label = document.createElement('span');
+        label.textContent = row.channel;
+        var track = document.createElement('div');
+        track.className = 'bar-track';
+        var fill = document.createElement('div');
+        fill.className = 'bar-fill';
+        fill.style.setProperty('--bar-width', (row.value / maxValue * 100).toFixed(1) + '%');
+        fill.style.setProperty('--bar-color', row.color);
+        track.appendChild(fill);
+        var value = document.createElement('span');
+        value.className = 'bar-value';
+        value.textContent = (row.value / total * 100).toFixed(1) + '%';
+        wrapper.append(label, track, value);
+        host.appendChild(wrapper);
+      });
+    }
+
+    function setAnalysisSelection(key, value) {
+      if (key === 'queue') {
+        currentReportQueue = currentReportQueue === value ? 'all' : value;
+        document.getElementById('queueFilter').value = currentReportQueue;
+      } else {
+        analysisDrilldown[key] = analysisDrilldown[key] === value ? null : value;
+      }
+      detailPage = 1;
+      renderScopedReport();
+      animateReportUpdate();
+      announceReportUpdate('Analysis drilldown updated. ' + getDrilldownSummary());
+    }
+
+    function getDrilldownSummary() {
+      var parts = [currentRange === '30d' ? '30 days' : '7 days'];
+      parts.push(currentReportQueue === 'all' ? 'All queues' : currentReportQueue);
+      if (analysisDrilldown.channel) parts.push(analysisDrilldown.channel);
+      if (analysisDrilldown.day) parts.push(analysisDrilldown.day);
+      if (analysisDrilldown.timeBand) parts.push(analysisDrilldown.timeBand);
+      return parts.join(' / ');
+    }
+
+    function renderDrilldownStrip() {
+      var host = document.getElementById('drilldownChips');
+      var values = [
+        currentRange === '30d' ? '30 days' : '7 days',
+        currentReportQueue === 'all' ? 'All queues' : currentReportQueue
+      ];
+      if (analysisDrilldown.channel) values.push(analysisDrilldown.channel);
+      if (analysisDrilldown.day) values.push(analysisDrilldown.day);
+      if (analysisDrilldown.timeBand) values.push(analysisDrilldown.timeBand);
+      host.replaceChildren();
+      values.forEach(function (value) {
+        var chip = document.createElement('span');
+        chip.className = 'drilldown-chip';
+        chip.textContent = value;
+        host.appendChild(chip);
+      });
+      document.getElementById('clearDrilldown').disabled = currentReportQueue === 'all'
+        && !analysisDrilldown.channel && !analysisDrilldown.day && !analysisDrilldown.timeBand;
+    }
+
+    function renderChannelDonut(channels) {
+      var host = document.getElementById('channelDonut');
+      var segments = buildDonutSegments(channels);
+      var total = channels.reduce(function (sum, row) { return sum + row.value; }, 0);
+      var layout = document.createElement('div');
+      layout.className = 'donut-layout';
+      var figure = document.createElement('div');
+      figure.className = 'donut-figure';
+      var svg = svgNode('svg', { viewBox: '0 0 120 120', role: 'img', 'aria-label': 'Channel interaction share' });
+      svg.appendChild(svgNode('circle', { cx: 60, cy: 60, r: 43, fill: 'none', stroke: '#e7ece9', 'stroke-width': 18 }));
+      segments.forEach(function (segment) {
+        var circle = svgNode('circle', {
+          class: 'donut-segment' + (analysisDrilldown.channel === segment.channel ? ' selected' : '')
+            + (analysisDrilldown.channel && analysisDrilldown.channel !== segment.channel ? ' muted' : ''),
+          cx: 60,
+          cy: 60,
+          r: 43,
+          fill: 'none',
+          stroke: segment.color,
+          'stroke-width': 18,
+          'pathLength': 100,
+          'stroke-dasharray': segment.sweep + ' ' + (100 - segment.sweep),
+          'stroke-dashoffset': -(segment.start / 3.6),
+          transform: 'rotate(-90 60 60)',
+          tabindex: 0,
+          role: 'button',
+          'aria-label': segment.channel + ', ' + segment.share.toFixed(1) + ' percent',
+          'aria-pressed': String(analysisDrilldown.channel === segment.channel)
+        });
+        circle.addEventListener('click', function () { setAnalysisSelection('channel', segment.channel); });
+        circle.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setAnalysisSelection('channel', segment.channel);
+          }
+        });
+        svg.appendChild(circle);
+      });
+      var center = document.createElement('div');
+      center.className = 'donut-center';
+      var centerValue = document.createElement('strong');
+      centerValue.textContent = total.toLocaleString('en-US');
+      var centerLabel = document.createElement('span');
+      centerLabel.textContent = 'interactions';
+      center.append(centerValue, centerLabel);
+      figure.append(svg, center);
+
+      var legend = document.createElement('div');
+      legend.className = 'donut-legend';
+      segments.forEach(function (segment) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'donut-legend-button';
+        button.setAttribute('aria-pressed', String(analysisDrilldown.channel === segment.channel));
+        var dot = document.createElement('span');
+        dot.className = 'legend-dot';
+        dot.style.setProperty('--dot-color', segment.color);
+        var name = document.createElement('span');
+        name.textContent = segment.channel;
+        var value = document.createElement('small');
+        value.textContent = segment.value.toLocaleString('en-US');
+        var share = document.createElement('strong');
+        share.textContent = segment.share.toFixed(1) + '%';
+        button.append(dot, name, value, share);
+        button.addEventListener('click', function () { setAnalysisSelection('channel', segment.channel); });
+        legend.appendChild(button);
+      });
+      layout.append(figure, legend);
+      host.replaceChildren(layout);
+    }
+
+    function renderQueuePerformance() {
+      var host = document.getElementById('queuePerformanceChart');
+      host.replaceChildren();
+      data.insights.queuePerformance.forEach(function (item) {
+        var scopedMetrics = data.insights.queueProfiles[item.queue][currentRange];
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'queue-performance-row';
+        button.setAttribute('aria-pressed', String(currentReportQueue === item.queue));
+        var name = document.createElement('span');
+        name.className = 'queue-performance-name';
+        var strong = document.createElement('strong');
+        strong.textContent = item.queue;
+        var sub = document.createElement('span');
+        sub.textContent = 'Select queue';
+        name.append(strong, sub);
+        var cluster = document.createElement('span');
+        cluster.className = 'metric-cluster';
+        [
+          { label: 'FCR', value: scopedMetrics.fcr, color: '#3e7b5f' },
+          { label: 'CSAT', value: scopedMetrics.csat, color: '#1b7880' },
+          { label: 'SLA', value: currentRange === '30d' ? item.sla30d : item.sla7d, color: '#d69a2d' }
+        ].forEach(function (metric) {
+          var row = document.createElement('span');
+          row.className = 'mini-bar';
+          var label = document.createElement('span');
+          label.textContent = metric.label;
+          var track = document.createElement('span');
+          track.className = 'mini-bar-track';
+          var fill = document.createElement('span');
+          fill.className = 'mini-bar-fill';
+          fill.style.setProperty('--metric-width', metric.value + '%');
+          fill.style.setProperty('--metric-color', metric.color);
+          track.appendChild(fill);
+          var value = document.createElement('span');
+          value.textContent = metric.value.toFixed(1);
+          row.append(label, track, value);
+          cluster.appendChild(row);
+        });
+        var volume = document.createElement('span');
+        volume.className = 'queue-volume';
+        var count = currentRange === '30d' ? item.interactions30d : item.interactions7d;
+        var countStrong = document.createElement('strong');
+        countStrong.textContent = count.toLocaleString('en-US');
+        volume.append(countStrong, document.createTextNode('volume'));
+        button.append(name, cluster, volume);
+        button.addEventListener('click', function () { setAnalysisSelection('queue', item.queue); });
+        host.appendChild(button);
+      });
+    }
+
+    function renderChannelOutcomes() {
+      var host = document.getElementById('channelOutcomeChart');
+      host.replaceChildren();
+      data.insights.channelOutcomes.forEach(function (item) {
+        var baseTotal = item.resolved + item.transferred + item.abandoned;
+        var total = currentReportSnapshot.channels.find(function (row) {
+          return row.channel === item.channel;
+        }).value;
+        var resolved = Math.round(total * item.resolved / baseTotal);
+        var transferred = Math.round(total * item.transferred / baseTotal);
+        var abandoned = total - resolved - transferred;
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'outcome-row';
+        button.setAttribute('aria-pressed', String(analysisDrilldown.channel === item.channel));
+        button.setAttribute('aria-label', item.channel + ': ' + resolved.toLocaleString('en-US')
+          + ' resolved, ' + transferred.toLocaleString('en-US') + ' transferred, '
+          + abandoned.toLocaleString('en-US') + ' abandoned; select to drill down');
+        var label = document.createElement('strong');
+        label.textContent = item.channel;
+        var track = document.createElement('span');
+        track.className = 'outcome-track';
+        [
+          { value: resolved, color: '#3e7b5f', label: 'Resolved' },
+          { value: transferred, color: '#d69a2d', label: 'Transferred' },
+          { value: abandoned, color: '#d75c50', label: 'Abandoned' }
+        ].forEach(function (segment) {
+          var part = document.createElement('span');
+          part.className = 'outcome-segment';
+          part.style.width = (segment.value / total * 100).toFixed(1) + '%';
+          part.style.background = segment.color;
+          part.title = segment.label + ': ' + segment.value.toLocaleString('en-US');
+          track.appendChild(part);
+        });
+        var value = document.createElement('span');
+        value.className = 'outcome-total';
+        value.textContent = total.toLocaleString('en-US');
+        button.append(label, track, value);
+        button.addEventListener('click', function () { setAnalysisSelection('channel', item.channel); });
+        host.appendChild(button);
+      });
+    }
+
+    function heatColor(value) {
+      if (value >= 85) return '#1e686c';
+      if (value >= 65) return '#4f918c';
+      if (value >= 45) return '#91bdb5';
+      if (value >= 25) return '#c8ded8';
+      return '#e8f1ee';
+    }
+
+    function renderDemandHeatmap() {
+      var host = document.getElementById('demandHeatmap');
+      host.replaceChildren();
+      var corner = document.createElement('span');
+      corner.className = 'heatmap-axis';
+      corner.textContent = 'Day';
+      host.appendChild(corner);
+      data.insights.timeBands.forEach(function (band) {
+        var label = document.createElement('span');
+        label.className = 'heatmap-axis';
+        label.textContent = band;
+        host.appendChild(label);
+      });
+      data.insights.hourlyDemand.forEach(function (day) {
+        var dayLabel = document.createElement('span');
+        dayLabel.className = 'heatmap-day';
+        dayLabel.textContent = day.day;
+        host.appendChild(dayLabel);
+        day.values.forEach(function (value, index) {
+          var band = data.insights.timeBands[index];
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'heatmap-cell';
+          button.style.setProperty('--heat-color', heatColor(value));
+          button.setAttribute('aria-label', day.day + ' ' + band + ', demand index ' + value);
+          button.setAttribute('aria-pressed', String(analysisDrilldown.day === day.day && analysisDrilldown.timeBand === band));
+          button.title = day.day + ' · ' + band + ' · index ' + value;
+          button.addEventListener('click', function () {
+            var isSame = analysisDrilldown.day === day.day && analysisDrilldown.timeBand === band;
+            analysisDrilldown.day = isSame ? null : day.day;
+            analysisDrilldown.timeBand = isSame ? null : band;
+            detailPage = 1;
+            renderScopedReport();
+            animateReportUpdate();
+            announceReportUpdate('Demand drilldown updated. ' + getDrilldownSummary());
+          });
+          host.appendChild(button);
+        });
+      });
+    }
+
+    function getScopedDetailRows() {
+      return filterDrilldownRows(data.insights.details, {
+        range: currentRange,
+        queue: currentReportQueue,
+        channel: analysisDrilldown.channel,
+        day: analysisDrilldown.day,
+        timeBand: analysisDrilldown.timeBand,
+        periodEnd: data.periodEnd
+      });
+    }
+
+    function renderLedgerSelection(record) {
+      var detail = document.getElementById('evidenceDetail');
+      var label = document.createElement('div');
+      label.className = 'detail-label';
+      label.textContent = 'Drilldown interaction';
+      var title = document.createElement('h3');
+      title.textContent = record.id;
+      var description = document.createElement('p');
+      description.textContent = record.intent + ' handled through ' + record.channel + '. Outcome: ' + record.outcome + '.';
+      var meta = document.createElement('div');
+      meta.className = 'detail-meta';
+      [
+        ['Queue', record.queue],
+        ['Agent', record.agent],
+        ['Duration', record.duration],
+        ['Sentiment', record.sentiment]
+      ].forEach(function (item) {
+        var row = document.createElement('div');
+        var key = document.createElement('span');
+        key.textContent = item[0];
+        var value = document.createElement('strong');
+        value.textContent = item[1];
+        row.append(key, value);
+        meta.appendChild(row);
+      });
+      detail.replaceChildren(label, title, description, meta);
+      animateElement(detail, [
+        { opacity: 0.55, transform: 'translateY(4px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 170, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+      detail.scrollIntoView({ behavior: isReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+    }
+
+    function renderDetailLedger() {
+      var filtered = getScopedDetailRows();
+      var page = paginateRows(filtered, detailPage, detailPageSize);
+      detailPage = page.page;
+      var host = document.getElementById('detailLedgerRows');
+      host.replaceChildren();
+      if (!page.rows.length) {
+        var emptyRow = document.createElement('tr');
+        var emptyCell = document.createElement('td');
+        emptyCell.colSpan = 9;
+        emptyCell.textContent = 'No illustrative interaction records match this drilldown.';
+        emptyCell.style.textAlign = 'center';
+        emptyCell.style.padding = '34px';
+        emptyRow.appendChild(emptyCell);
+        host.appendChild(emptyRow);
+      }
+      page.rows.forEach(function (record) {
+        var row = document.createElement('tr');
+        var idCell = document.createElement('td');
+        var idButton = document.createElement('button');
+        idButton.type = 'button';
+        idButton.className = 'ledger-row-button';
+        idButton.textContent = record.id;
+        idButton.addEventListener('click', function () { renderLedgerSelection(record); });
+        idCell.appendChild(idButton);
+        row.appendChild(idCell);
+        [record.displayDate, record.channel, record.queue, record.intent].forEach(function (text) {
+          var cell = document.createElement('td');
+          cell.textContent = text;
+          row.appendChild(cell);
+        });
+        var outcomeCell = document.createElement('td');
+        var outcome = document.createElement('span');
+        outcome.className = 'outcome-badge ' + record.outcome.toLowerCase();
+        outcome.textContent = record.outcome;
+        outcomeCell.appendChild(outcome);
+        row.appendChild(outcomeCell);
+        var sentimentCell = document.createElement('td');
+        var sentiment = document.createElement('span');
+        sentiment.className = 'sentiment-badge';
+        sentiment.textContent = record.sentiment;
+        sentimentCell.appendChild(sentiment);
+        row.appendChild(sentimentCell);
+        [record.duration, record.agent].forEach(function (text) {
+          var cell = document.createElement('td');
+          cell.textContent = text;
+          row.appendChild(cell);
+        });
+        host.appendChild(row);
+      });
+      document.getElementById('detailLedgerScope').textContent = getDrilldownSummary() + ' · ' + filtered.length + ' illustrative records';
+      document.getElementById('detailPageStatus').textContent = 'Page ' + page.page + ' of ' + page.totalPages
+        + ' · ' + page.start + '–' + page.end + ' of ' + page.total;
+      var previous = document.querySelector('[data-page-action="previous"]');
+      var next = document.querySelector('[data-page-action="next"]');
+      previous.disabled = page.page <= 1;
+      next.disabled = page.page >= page.totalPages;
+    }
+
+    function renderTrendLegend(label) {
+      var host = document.getElementById('trendLegend');
+      host.replaceChildren();
+      var item = document.createElement('span');
+      item.className = 'legend-item';
+      var swatch = document.createElement('span');
+      swatch.className = 'legend-swatch';
+      swatch.style.setProperty('--swatch', '#1b7880');
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(label));
+      host.appendChild(item);
+    }
+
+    function getRangeBase() {
+      if (currentRange === '30d') {
+        return {
+          label: data.insights.period30.label,
+          interactions: data.insights.period30.interactions,
+          aht: data.insights.period30.aht,
+          fcr: data.insights.period30.fcr,
+          csat: data.insights.period30.csat,
+          productivity: data.insights.period30.productivity,
+          points: data.insights.period30.points,
+          channels: data.insights.period30.channels
+        };
+      }
+      var period7 = data.insights.period7;
+      return {
+        label: period7.label,
+        interactions: period7.interactions,
+        aht: period7.aht,
+        fcr: period7.fcr,
+        csat: period7.csat,
+        productivity: period7.productivity,
+        points: getSevenDayPoints(),
+        channels: data.insights.channels
+      };
+    }
+
+    function scaleRowsToTotal(rows, share, valueKey, targetTotal) {
+      var scaled = rows.map(function (row, index) {
+        var exact = row[valueKey] * share;
+        return {
+          index: index,
+          row: Object.assign({}, row),
+          value: Math.floor(exact),
+          remainder: exact - Math.floor(exact)
+        };
+      });
+      var assigned = scaled.reduce(function (sum, item) { return sum + item.value; }, 0);
+      var order = scaled.slice().sort(function (left, right) {
+        return right.remainder - left.remainder || left.index - right.index;
+      });
+      for (var extra = 0; extra < targetTotal - assigned; extra += 1) {
+        order[extra % order.length].value += 1;
+      }
+      return scaled.map(function (item) {
+        item.row[valueKey] = item.value;
+        return item.row;
+      });
+    }
+
+    function scalePoints(points, share, targetTotal) {
+      var scaledPoints = scaleRowsToTotal(points, share, 'total', targetTotal);
+      return scaledPoints.map(function (row, index) {
+        if (points[index].channels) {
+          row.channels = scaleRowsToTotal(points[index].channels, share, 'value', row.total);
+        }
+        return row;
+      });
+    }
+
+    function scaleChannels(channels, share, targetTotal) {
+      return scaleRowsToTotal(channels, share, 'value', targetTotal);
+    }
+
+    function adjustAht(value, seconds) {
+      var parts = value.split(':').map(Number);
+      var total = parts[0] * 60 + parts[1] + seconds;
+      var minutes = Math.floor(total / 60);
+      var remainder = Math.max(0, total % 60);
+      return String(minutes).padStart(2, '0') + ':' + String(remainder).padStart(2, '0');
+    }
+
+    function getPeriodScorecards() {
+      if (currentRange !== '30d') {
+        return data.insights.scorecards.map(function (agent) { return Object.assign({}, agent); });
+      }
+      var ahtAdjustments = [9, -4, 12, 6, -7, 14];
+      var fcrAdjustments = [1.1, 0.8, 1.4, 0.6, 1.2, 0.9];
+      var csatAdjustments = [0.7, 0.5, 0.9, 0.4, 0.8, 0.6];
+      return data.insights.scorecards.map(function (agent, index) {
+        return Object.assign({}, agent, {
+          interactions: Math.round(agent.interactions * 4.15),
+          aht: adjustAht(agent.aht, ahtAdjustments[index]),
+          fcr: +(agent.fcr - fcrAdjustments[index]).toFixed(1),
+          csat: +(agent.csat - csatAdjustments[index]).toFixed(1),
+          productivity: +(agent.productivity - 0.2).toFixed(1),
+          quality: agent.quality - 1
+        });
+      });
+    }
+
+    function getScopedScorecards() {
+      var rows = getPeriodScorecards();
+      return currentReportQueue === 'all'
+        ? rows
+        : rows.filter(function (agent) { return agent.queue === currentReportQueue; });
+    }
+
+    function filterEvidence(records, range, queue, periodEnd) {
+      var rangeDays = range === '30d' ? 30 : 7;
+      var end = Date.parse(periodEnd);
+      var start = end - rangeDays * 24 * 60 * 60 * 1000 + 1;
+      return records.filter(function (record) {
+        var occurredAt = Date.parse(record.occurredAt);
+        var inRange = occurredAt >= start && occurredAt <= end;
+        var inQueue = queue === 'all' || record.queue === queue;
+        return inRange && inQueue;
+      });
+    }
+
+    function getScopedEvidence() {
+      return filterEvidence(
+        data.insights.evidence,
+        currentRange,
+        currentReportQueue,
+        data.periodEnd
+      );
+    }
+
+    function renderScorecards(rows) {
+      var host = document.getElementById('scorecardRows');
+      host.replaceChildren();
+      rows.forEach(function (agent) {
+        var row = document.createElement('tr');
+        var values = [
+          { text: agent.agent, className: 'agent-name text-left' },
+          { text: agent.interactions },
+          { text: agent.aht },
+          { text: agent.fcr.toFixed(1) + '%' },
+          { text: agent.csat.toFixed(1) + '%' },
+          { text: agent.productivity.toFixed(1) + ' / hr' }
+        ];
+        values.forEach(function (value) {
+          var cell = document.createElement('td');
+          cell.textContent = value.text;
+          if (value.className) {
+            cell.className = value.className;
+          }
+          row.appendChild(cell);
+        });
+        var qualityCell = document.createElement('td');
+        var quality = document.createElement('span');
+        quality.className = 'quality-score';
+        quality.textContent = agent.quality;
+        qualityCell.appendChild(quality);
+        row.appendChild(qualityCell);
+        host.appendChild(row);
+      });
+    }
+
+    function makeRecordingBlob(record) {
+      var sampleRate = 8000;
+      var seconds = 2;
+      var samples = sampleRate * seconds;
+      var signature = record.id.split('').reduce(function (sum, character) {
+        return sum + character.charCodeAt(0);
+      }, 0);
+      var frequency = 180 + signature % 160;
+      var buffer = new ArrayBuffer(44 + samples * 2);
+      var view = new DataView(buffer);
+      var writeText = function (offset, text) {
+        for (var index = 0; index < text.length; index += 1) {
+          view.setUint8(offset + index, text.charCodeAt(index));
+        }
+      };
+      writeText(0, 'RIFF');
+      view.setUint32(4, 36 + samples * 2, true);
+      writeText(8, 'WAVE');
+      writeText(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeText(36, 'data');
+      view.setUint32(40, samples * 2, true);
+      for (var sample = 0; sample < samples; sample += 1) {
+        var envelope = Math.sin(Math.PI * sample / samples);
+        var pulse = 0.75 + 0.25 * Math.sin(2 * Math.PI * (2 + signature % 4) * sample / sampleRate);
+        var tone = Math.sin(2 * Math.PI * frequency * sample / sampleRate) * envelope * pulse * 0.035;
+        view.setInt16(44 + sample * 2, Math.round(tone * 32767), true);
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function evidenceText(record, type) {
+      if (type === 'recording') {
+        return 'Illustrative ' + record.recordingDuration + ' audio sample for ' + record.id +
+          '. This sample is not a customer conversation.';
+      }
+      if (type === 'transcript') return record.transcript;
+      if (type === 'log') return record.log;
+      if (type === 'consent') return record.consentRecord;
+      return record.summary;
+    }
+
+    function revokeObjectUrlLater(url) {
+      setTimeout(function () { URL.revokeObjectURL(url); }, 0);
+    }
+
+    function triggerDownload(blob, filename) {
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      revokeObjectUrlLater(url);
+    }
+
+    function downloadEvidence(record, type) {
+      if (type === 'recording') {
+        triggerDownload(
+          makeRecordingBlob(record),
+          record.id + '-illustrative-recording-sample.wav'
+        );
+        return;
+      }
+      var content = 'Illustrative evidence sample — not production data.\n\n' + evidenceText(record, type);
+      triggerDownload(
+        new Blob([content], { type: 'text/plain;charset=utf-8' }),
+        record.id + '-illustrative-' + type + '.txt'
+      );
+    }
+
+    function viewEvidence(record, type) {
+      var detail = document.getElementById('evidenceDetail');
+      document.querySelectorAll('.evidence-button').forEach(function (button) {
+        var isSelected = button.dataset.recordId === record.id && button.dataset.evidenceType === type;
+        button.setAttribute('aria-pressed', String(isSelected));
+      });
+      var titles = {
+        recording: 'Recording sample',
+        transcript: 'Transcript',
+        log: 'Interaction log',
+        summary: 'AI summary',
+        consent: 'Consent record'
+      };
+      detail.innerHTML = '';
+      var label = document.createElement('div');
+      label.className = 'detail-label';
+      label.textContent = titles[type];
+      var title = document.createElement('h3');
+      title.textContent = record.id;
+      var body = document.createElement('p');
+      body.textContent = evidenceText(record, type);
+      var meta = document.createElement('div');
+      meta.className = 'detail-meta';
+      [
+        ['Date', record.displayDate],
+        ['Channel', record.channel],
+        ['Queue', record.queue],
+        ['Consent', record.consent]
+      ].forEach(function (pair) {
+        var row = document.createElement('div');
+        var key = document.createElement('span');
+        key.textContent = pair[0];
+        var value = document.createElement('strong');
+        value.textContent = pair[1];
+        row.append(key, value);
+        meta.appendChild(row);
+      });
+      detail.append(label, title, body);
+      if (type === 'recording') {
+        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = URL.createObjectURL(makeRecordingBlob(record));
+        var audio = document.createElement('audio');
+        audio.className = 'evidence-audio';
+        audio.controls = true;
+        audio.src = currentAudioUrl;
+        detail.appendChild(audio);
+      }
+      detail.appendChild(meta);
+      var download = document.createElement('button');
+      download.type = 'button';
+      download.className = 'command primary evidence-download';
+      download.textContent = 'Download ' + titles[type];
+      download.addEventListener('click', function () { downloadEvidence(record, type); });
+      detail.appendChild(download);
+      animateElement(detail, [
+        { opacity: 0.35, transform: 'translateY(4px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 180, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+    }
+
+    function renderEvidence(rows) {
+      var host = document.getElementById('evidenceRows');
+      host.replaceChildren();
+      rows.forEach(function (record) {
+        var row = document.createElement('tr');
+        [
+          { text: record.id, className: 'queue-name text-left' },
+          { text: record.displayDate },
+          { text: record.channel },
+          { text: record.queue },
+          { text: record.agent }
+        ].forEach(function (value) {
+          var cell = document.createElement('td');
+          cell.textContent = value.text;
+          if (value.className) {
+            cell.className = value.className;
+          }
+          row.appendChild(cell);
+        });
+        var consentCell = document.createElement('td');
+        var consent = document.createElement('span');
+        consent.className = 'consent ' + record.consent.toLowerCase();
+        consent.textContent = record.consent;
+        consentCell.appendChild(consent);
+        row.appendChild(consentCell);
+
+        var actionCell = document.createElement('td');
+        var actions = document.createElement('div');
+        actions.className = 'evidence-actions';
+        var evidenceActions = [];
+        if (record.recording) evidenceActions.push({ key: 'recording', label: 'Recording sample' });
+        evidenceActions.push(record.transcript
+          ? { key: 'transcript', label: 'Transcript' }
+          : { key: 'log', label: 'Interaction log' });
+        evidenceActions.push({ key: 'summary', label: 'AI summary' });
+        evidenceActions.push({ key: 'consent', label: 'Consent' });
+        evidenceActions.forEach(function (action) {
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'evidence-button';
+          button.textContent = action.label;
+          button.dataset.recordId = record.id;
+          button.dataset.evidenceType = action.key;
+          button.setAttribute('aria-controls', 'evidenceDetail');
+          button.setAttribute('aria-pressed', 'false');
+          button.addEventListener('click', function () { viewEvidence(record, action.key); });
+          actions.appendChild(button);
+        });
+        actionCell.appendChild(actions);
+        row.appendChild(actionCell);
+        host.appendChild(row);
+      });
+      if (rows.length) viewEvidence(rows[0], 'summary');
+    }
+
+    function renderPrintMethodology(snapshot) {
+      var host = document.getElementById('printMethodology');
+      var title = document.createElement('h3');
+      title.textContent = 'Metric methodology';
+      var interactions = buildMetricExplanation('interactions', snapshot);
+      var calculation = document.createElement('p');
+      calculation.textContent = 'Interactions: ' + interactions.calculation + '. Scope: ' + interactions.scope + '.';
+      var quality = document.createElement('p');
+      quality.textContent = 'AHT, FCR, CSAT and Productivity are reported illustrative values; raw event and response records are not embedded in this report.';
+      var analysis = document.createElement('p');
+      analysis.textContent = 'Outcome, demand and detailed-ledger breakdowns are illustrative analytical views; the ledger is a representative sample rather than a transaction-level reconciliation.';
+      host.replaceChildren(title, calculation, quality, analysis);
+    }
+
+    function renderScopedReport() {
+      var base = getRangeBase();
+      var interactions = base.interactions;
+      var aht = base.aht;
+      var fcr = base.fcr;
+      var csat = base.csat;
+      var productivity = base.productivity;
+      var points = base.points;
+      var channels = base.channels;
+      var queueLabel = 'All queues';
+
+      if (currentReportQueue !== 'all') {
+        var profile = data.insights.queueProfiles[currentReportQueue];
+        var metrics = profile[currentRange];
+        interactions = Math.round(base.interactions * profile.share);
+        aht = metrics.aht;
+        fcr = metrics.fcr;
+        csat = metrics.csat;
+        productivity = metrics.productivity;
+        points = scalePoints(base.points, profile.share, interactions);
+        channels = scaleChannels(base.channels, profile.share, interactions);
+        queueLabel = currentReportQueue;
+      }
+
+      currentReportSnapshot = {
+        rangeLabel: currentRange === '30d' ? '30 days' : '7 days',
+        queueLabel: queueLabel,
+        interactions: interactions,
+        aht: aht,
+        fcr: fcr,
+        csat: csat,
+        productivity: productivity,
+        points: points,
+        channels: channels,
+        isAllocated: currentReportQueue !== 'all'
+      };
+
+      document.getElementById('periodLabel').textContent = base.label;
+      document.getElementById('metricInteractions').textContent = interactions.toLocaleString('en-US');
+      document.getElementById('metricAht').textContent = aht;
+      document.getElementById('metricFcr').textContent = fcr.toFixed(1) + '%';
+      document.getElementById('metricCsat').textContent = csat.toFixed(1) + '%';
+      document.getElementById('metricProductivity').textContent = productivity.toFixed(1);
+      document.getElementById('reportScope').textContent =
+        'Custom report \u00b7 ' + (currentRange === '30d' ? '30 days' : '7 days') + ' \u00b7 ' + queueLabel;
+      renderTrendLegend(queueLabel + ' / all channels');
+      renderVolumeChart(points);
+      renderChannels(channels);
+      renderDrilldownStrip();
+      renderChannelDonut(channels);
+      renderQueuePerformance();
+      renderChannelOutcomes();
+      renderDemandHeatmap();
+      renderScorecards(getScopedScorecards());
+      renderEvidence(getScopedEvidence());
+      renderDetailLedger();
+      renderPrintMethodology(currentReportSnapshot);
+    }
+
+    function setRange(range, silent) {
+      currentRange = range;
+      detailPage = 1;
+      document.querySelectorAll('.range-button').forEach(function (button) {
+        var isActive = button.dataset.range === range;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
+      });
+      renderScopedReport();
+      if (!silent) {
+        animateReportUpdate();
+        announceReportUpdate(
+          (currentRange === '30d' ? '30-day' : '7-day') + ' ' +
+          (currentReportQueue === 'all' ? 'All queues' : currentReportQueue) + ' report updated.'
+        );
+      }
+    }
+
+    function csvCell(value) {
+      return '"' + String(value == null ? '' : value).replaceAll('"', '""') + '"';
+    }
+
+    function generateReport() {
+      currentReportQueue = document.getElementById('queueFilter').value;
+      detailPage = 1;
+      switchView('insights');
+      renderScopedReport();
+      animateReportUpdate();
+      announceReportUpdate(
+        (currentRange === '30d' ? '30-day' : '7-day') + ' ' +
+        (currentReportQueue === 'all' ? 'All queues' : currentReportQueue) + ' report updated.'
+      );
+    }
+
+    window.generateReport = generateReport;
+
+    function downloadCsv() {
+      var rows;
+      if (currentView === 'live') {
+        rows = [
+          ['Dataset classification', 'Illustrative operational dataset — not production data'],
+          [],
+          ['Interaction', 'Channel', 'Queue', 'Agent', 'Duration', 'Sentiment']
+        ]
+          .concat(getFilteredLiveInteractions().map(function (row) {
+            return [row.id, row.channel, row.queue, row.agent, row.duration, row.sentiment];
+          }));
+      } else {
+        var detailRows = getScopedDetailRows();
+        rows = [
+          ['Dataset classification', 'Illustrative operational dataset — not production data'],
+          ['Report range', currentRange === '30d' ? '30 days' : '7 days'],
+          ['Queue', currentReportQueue === 'all' ? 'All queues' : currentReportQueue],
+          ['Ledger channel drilldown', analysisDrilldown.channel || 'All channels'],
+          ['Ledger demand drilldown', analysisDrilldown.day && analysisDrilldown.timeBand
+            ? analysisDrilldown.day + ' ' + analysisDrilldown.timeBand
+            : 'All time bands'],
+          [],
+          ['Report-level agent scorecards'],
+          ['Agent', 'Interactions', 'AHT', 'FCR', 'CSAT', 'Productivity', 'Quality']
+        ].concat(getScopedScorecards().map(function (row) {
+            return [row.agent, row.interactions, row.aht, row.fcr + '%', row.csat + '%', row.productivity, row.quality];
+          })).concat([
+            [],
+            ['Ledger-level illustrative records'],
+            ['Interaction', 'Date', 'Channel', 'Queue', 'Intent', 'Outcome', 'Sentiment', 'Duration', 'Agent']
+          ]).concat(detailRows.map(function (row) {
+            return [row.id, row.displayDate, row.channel, row.queue, row.intent, row.outcome, row.sentiment, row.duration, row.agent];
+          }));
+      }
+      var csv = '\uFEFF' + rows.map(function (row) { return row.map(csvCell).join(','); }).join('\r\n');
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      var queuePart = currentReportQueue === 'all'
+        ? 'all-queues'
+        : currentReportQueue.toLowerCase().replaceAll(' ', '-');
+      link.download = currentView === 'live'
+        ? 'pacific-illustrative-live-operations.csv'
+        : 'pacific-illustrative-operational-insights-' + currentRange + '-' + queuePart + '.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      revokeObjectUrlLater(url);
+    }
+
+    window.downloadCsv = downloadCsv;
+
+    document.querySelectorAll('.tab-button').forEach(function (button) {
+      button.addEventListener('click', function () { switchView(button.dataset.tab); });
+      button.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        var tabs = Array.from(document.querySelectorAll('.tab-button'));
+        var offset = event.key === 'ArrowRight' ? 1 : -1;
+        var next = tabs[(tabs.indexOf(button) + offset + tabs.length) % tabs.length];
+        next.focus();
+        next.click();
+      });
+    });
+    document.querySelectorAll('.range-button').forEach(function (button) {
+      button.addEventListener('click', function () { setRange(button.dataset.range); });
+      button.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        var ranges = Array.from(document.querySelectorAll('.range-button'));
+        var offset = event.key === 'ArrowRight' ? 1 : -1;
+        var next = ranges[(ranges.indexOf(button) + offset + ranges.length) % ranges.length];
+        next.focus();
+        next.click();
+      });
+    });
+    document.querySelectorAll('.metric-info').forEach(function (button) {
+      button.setAttribute('aria-controls', 'metricDrawer');
+      button.addEventListener('click', function () { openMetricDrawer(button.dataset.metric); });
+    });
+    document.querySelectorAll('[data-drawer-close]').forEach(function (button) {
+      button.addEventListener('click', closeMetricDrawer);
+    });
+    document.getElementById('metricDrawer').addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMetricDrawer();
+        return;
+      }
+      trapDrawerFocus(event);
+    });
+    document.getElementById('queueFilter').addEventListener('change', function () {
+      filterInteractions();
+      renderQueues();
+      var selected = document.getElementById('queueFilter').value;
+      announceReportUpdate(
+        (selected === 'all' ? 'All queues' : selected + ' queue') + ' selected. ' +
+        getFilteredLiveInteractions().length + ' active interactions displayed.'
+      );
+    });
+    document.getElementById('printButton').addEventListener('click', function () { window.print(); });
+    document.getElementById('csvButton').addEventListener('click', downloadCsv);
+    document.getElementById('reportButton').addEventListener('click', generateReport);
+    document.getElementById('clearDrilldown').addEventListener('click', function () {
+      currentReportQueue = 'all';
+      document.getElementById('queueFilter').value = 'all';
+      analysisDrilldown = { channel: null, day: null, timeBand: null };
+      detailPage = 1;
+      renderScopedReport();
+      animateReportUpdate();
+      announceReportUpdate('Analysis drilldown cleared.');
+    });
+    document.getElementById('detailPageSize').addEventListener('change', function (event) {
+      detailPageSize = Number(event.target.value);
+      detailPage = 1;
+      renderDetailLedger();
+      announceReportUpdate(document.getElementById('detailPageStatus').textContent);
+    });
+    document.querySelectorAll('[data-page-action]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        detailPage += button.dataset.pageAction === 'next' ? 1 : -1;
+        renderDetailLedger();
+        document.querySelector('.table-scroll').scrollTop = 0;
+        announceReportUpdate(document.getElementById('detailPageStatus').textContent);
+      });
+    });
+
+    renderQueues();
+    renderInteractions(data.live.interactions);
+    setRange('7d', true);
+  }());
+</script>
+</body>
+</html>

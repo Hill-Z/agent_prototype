@@ -5,14 +5,23 @@ const SAVED_KEY = 'uagent-advanced-config-saved-v1';
 
 function withDefaults(value: Partial<AgentConfig> | null): AgentConfig {
   const defaults = structuredClone(defaultAgentConfig);
+  const storedMemory = value?.longMemory as Partial<AgentConfig['longMemory']> | undefined;
   return {
     ...defaults,
     ...value,
-    longMemory: { ...defaults.longMemory, ...value?.longMemory },
+    longMemory: {
+      ...defaults.longMemory,
+      ...storedMemory,
+      backupKeys: Array.isArray(storedMemory?.backupKeys) ? storedMemory.backupKeys : defaults.longMemory.backupKeys,
+      profileFields: Array.isArray(storedMemory?.profileFields) ? storedMemory.profileFields : defaults.longMemory.profileFields,
+      profilePrompt: typeof storedMemory?.profilePrompt === 'string' ? storedMemory.profilePrompt : defaults.longMemory.profilePrompt,
+      summaryPrompt: typeof storedMemory?.summaryPrompt === 'string' ? storedMemory.summaryPrompt : defaults.longMemory.summaryPrompt
+    },
     responseExperience: { ...defaults.responseExperience, ...value?.responseExperience },
     conversationBehavior: { ...defaults.conversationBehavior, ...value?.conversationBehavior },
     proactiveService: { ...defaults.proactiveService, ...value?.proactiveService },
-    multimodal: { ...defaults.multimodal, ...value?.multimodal }
+    multimodal: { ...defaults.multimodal, ...value?.multimodal },
+    planning: { ...defaults.planning, ...value?.planning }
   };
 }
 

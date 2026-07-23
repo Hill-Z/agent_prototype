@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PacificLight Commercial Electricity Quote Request</title>
+  <style>
+    :root {
+      --pl-orange: #f15a24;
+      --pl-orange-dark: #d94a17;
+      --pl-orange-soft: #fff3ec;
+      --ink: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --green: #16a34a;
+      --amber: #d97706;
+      --shadow: 0 18px 45px rgba(17, 24, 39, .12);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid rgba(229, 231, 235, .85);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+    }
+
+    .nav {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      color: var(--pl-orange);
+      font-size: 25px;
+      letter-spacing: -.02em;
+    }
+
+    .brand img {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 8px 22px rgba(241, 90, 36, .16);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .nav-cta {
+      text-decoration: none;
+      color: #fff;
+      background: var(--pl-orange);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      box-shadow: 0 10px 22px rgba(241, 90, 36, .28);
+    }
+
+    .hero-wrap {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(17,24,39,.78), rgba(17,24,39,.48), rgba(241,90,36,.2)),
+        url('https://www.pacificlight.com.sg/img/about/aboutus-1.webp') center/cover no-repeat;
+    }
+
+    .hero-wrap:after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 110px;
+      background: linear-gradient(180deg, transparent, var(--bg));
+      pointer-events: none;
+    }
+
+    .hero {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      min-height: 430px;
+      padding: 58px 0 92px;
+      display: grid;
+      grid-template-columns: 1.04fr .96fr;
+      gap: 34px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .intro {
+      color: #fff;
+      padding-right: 8px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 243, 236, .95);
+      color: var(--pl-orange-dark);
+      border: 1px solid rgba(254, 215, 170, .9);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: clamp(36px, 5vw, 62px);
+      line-height: 1.02;
+      letter-spacing: -.052em;
+      max-width: 11ch;
+    }
+
+    .lead {
+      font-size: 18px;
+      line-height: 1.68;
+      color: rgba(255,255,255,.88);
+      margin: 0 0 25px;
+      max-width: 58ch;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .primary-link, .secondary-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .primary-link { background: var(--pl-orange); color: #fff; box-shadow: 0 16px 28px rgba(241,90,36,.34); }
+    .secondary-link { color: #fff; border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.12); }
+
+    .visual-card {
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(255,255,255,.7);
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card img {
+      width: 100%;
+      height: 245px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .visual-body {
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .visual-body strong {
+      color: var(--ink);
+      font-size: 20px;
+      letter-spacing: -.02em;
+    }
+
+    .visual-body p {
+      margin: 0;
+      color: #4b5563;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .metric {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .metric b { color: var(--pl-orange); font-size: 17px; }
+    .metric span { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+    .main {
+      width: min(1180px, calc(100% - 32px));
+      margin: -54px auto 0;
+      position: relative;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: .86fr 1.14fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .info-panel, .form-card {
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(229,231,235,.95);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .info-panel { padding: 24px; }
+    .info-panel h2, .form-head h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: -.025em;
+    }
+    .info-panel p, .form-head p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 14px; }
+
+    .benefits {
+      display: grid;
+      gap: 14px;
+      margin: 22px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .benefits li {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 11px;
+      align-items: start;
+      font-size: 14.5px;
+      color: #374151;
+      line-height: 1.45;
+    }
+
+    .tick {
+      width: 25px;
+      height: 25px;
+      border-radius: 9px;
+      background: #ecfdf5;
+      color: var(--green);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+    }
+
+    .sustain-card {
+      margin-top: 22px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #111827;
+      color: #fff;
+    }
+    .sustain-card img { width: 100%; height: 138px; object-fit: cover; display: block; opacity: .94; }
+    .sustain-card div { padding: 16px; }
+    .sustain-card strong { color: #fb923c; font-size: 18px; }
+    .sustain-card span { display:block; margin-top: 7px; color: #d1d5db; font-size: 13px; line-height: 1.45; }
+
+    .form-card { padding: 26px; }
+    .form-head { margin-bottom: 20px; }
+
+    form { display: grid; gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    label { display: grid; gap: 7px; font-size: 13px; font-weight: 800; color: #374151; }
+    input, select, textarea {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
+      padding: 12px 13px; font: inherit; font-size: 14px; outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--pl-orange); box-shadow: 0 0 0 4px rgba(241,90,36,.12); }
+    textarea { min-height: 92px; resize: vertical; }
+    .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+    .actions { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; margin-top: 4px; }
+    .privacy { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    button {
+      border: 0; border-radius: 14px; padding: 13px 20px; background: var(--pl-orange); color: #fff;
+      font-weight: 900; font-size: 15px; cursor: pointer; box-shadow: 0 12px 24px rgba(241,90,36,.28);
+      transition: transform .16s ease, background .16s ease, box-shadow .16s ease;
+    }
+    button:hover { background: var(--pl-orange-dark); transform: translateY(-1px); box-shadow: 0 16px 28px rgba(241,90,36,.34); }
+
+    .result {
+      display: none; margin-top: 16px; padding: 15px; border-radius: 14px; background: #ecfdf5;
+      border: 1px solid #bbf7d0; color: #166534; line-height: 1.5; font-size: 14px;
+    }
+    .result strong { display: block; margin-bottom: 4px; }
+
+    footer { width: min(1180px, calc(100% - 32px)); margin: 28px auto 0; padding: 0 0 34px; color: var(--muted); font-size: 12px; text-align: center; line-height: 1.5; }
+
+    @media (max-width: 920px) {
+      .hero, .main { grid-template-columns: 1fr; }
+      .hero { padding-top: 42px; }
+      h1 { max-width: 13ch; }
+      .main { margin-top: -42px; }
+      .nav-right span { display: none; }
+    }
+    @media (max-width: 560px) {
+      .nav, .hero, .main, footer { width: min(100% - 22px, 1180px); }
+      .nav { height: 66px; }
+      .brand { font-size: 21px; }
+      .brand img { width: 38px; height: 38px; }
+      .nav-cta { display: none; }
+      .hero { padding: 34px 0 80px; }
+      .visual-card img { height: 180px; }
+      .metrics, .grid-2, .actions { grid-template-columns: 1fr; }
+      .info-panel, .form-card { border-radius: 18px; padding: 21px; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <nav class="nav">
+      <div class="brand">
+        <img src="https://www.pacificlight.com.sg/favicon/apple-touch-icon.png" alt="PacificLight logo">
+        <div>Pacific Light</div>
+      </div>
+      <div class="nav-right">
+        <span>Commercial Electricity Services</span>
+        <a class="nav-cta" href="#quoteForm">Request Quote</a>
+      </div>
+    </nav>
+  </div>
+
+  <section class="hero-wrap">
+    <div class="hero">
+      <div class="intro">
+        <div class="eyebrow">Business electricity solutions</div>
+        <h1>Commercial electricity quote request</h1>
+        <p class="lead">Share your business profile and estimated electricity usage. PacificLight can prepare an indicative quotation for a suitable commercial electricity plan.</p>
+        <div class="hero-actions">
+          <a class="primary-link" href="#quoteForm">Start request</a>
+          <a class="secondary-link" href="https://www.pacificlight.com.sg/business/sustainergy" target="_blank" rel="noopener">Explore business solutions</a>
+        </div>
+      </div>
+
+      <aside class="visual-card">
+        <img src="https://www.pacificlight.com.sg/img/business//sustainergy/TemasekClub-EPC-project.png" alt="PacificLight commercial energy project">
+        <div class="visual-body">
+          <strong>Plan with clearer electricity costs</strong>
+          <p>For businesses that want predictable energy budgeting, contract visibility and support from a Singapore electricity retailer.</p>
+          <div class="metrics">
+            <div class="metric"><b>24 mo.</b><span>fixed-price option</span></div>
+            <div class="metric"><b>SGD</b><span>indicative rate</span></div>
+            <div class="metric"><b>9%</b><span>GST estimate</span></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <main class="main">
+    <aside class="info-panel">
+      <h2>What you can request</h2>
+      <p>Use this form when you need a commercial electricity quotation for a new shop, office, food-service site, warehouse or industrial location.</p>
+      <ul class="benefits">
+        <li><span class="tick">✓</span><span>Indicative commercial fixed-price plan recommendation.</span></li>
+        <li><span class="tick">✓</span><span>Estimated monthly cost based on expected kWh consumption.</span></li>
+        <li><span class="tick">✓</span><span>Follow-up from the commercial service team using your submitted contact details.</span></li>
+      </ul>
+      <div class="sustain-card">
+        <img src="https://www.pacificlight.com.sg/img/about/who-is-pacificlight-02.webp" alt="PacificLight energy operations">
+        <div>
+          <strong>For Singapore businesses</strong>
+          <span>Final pricing, eligibility and contract terms are confirmed after account review.</span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="form-card">
+      <div class="form-head">
+        <h2>Company information</h2>
+        <p>Please complete the form below. Fields marked with * are required.</p>
+      </div>
+
+      <form id="quoteForm">
+        <label>
+          Company / Shop Name *
+          <input name="company" required placeholder="e.g. Sunrise Bakery Pte Ltd" />
+        </label>
+
+        <div class="grid-2">
+          <label>
+            Business Type *
+            <select name="businessType" required>
+              <option value="">Select business type</option>
+              <option>Bakery / food service</option>
+              <option>Retail shop</option>
+              <option>Office</option>
+              <option>Warehouse / logistics</option>
+              <option>Manufacturing / industrial</option>
+              <option>Other commercial business</option>
+            </select>
+          </label>
+          <label>
+            Expected Supply Start Date
+            <input name="startDate" type="date" />
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>
+            Estimated Monthly Consumption *
+            <input name="consumption" required inputmode="numeric" placeholder="e.g. 8000 kWh" />
+            <span class="hint">An estimate is fine if exact usage is not available.</span>
+          </label>
+          <label>
+            Preferred Contract Term
+            <select name="contractTerm">
+              <option>24 months</option>
+              <option>12 months</option>
+              <option>Not sure yet</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>
+            Contact Person *
+            <input name="contact" required placeholder="Full name" />
+          </label>
+          <label>
+            Contact Number *
+            <input name="phone" required placeholder="Phone number" />
+          </label>
+        </div>
+
+        <label>
+          Email Address *
+          <input name="email" type="email" required placeholder="name@company.com" />
+        </label>
+
+        <label>
+          Additional Notes
+          <textarea name="notes" placeholder="Tell us about your site, preferred plan, current retailer, billing preference or any special requirement."></textarea>
+        </label>
+
+        <div class="actions">
+          <div class="privacy">By submitting this request, you agree to be contacted regarding your commercial electricity quotation.</div>
+          <button type="submit">Submit Quote Request</button>
+        </div>
+      </form>
+
+      <div class="result" id="resultBox">
+        <strong>Quote request submitted</strong>
+        Thank you. Your commercial electricity quote request has been received. A PacificLight consultant will follow up with the details provided.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    This page is for commercial electricity quotation enquiries. Final pricing, contract terms and eligibility are subject to confirmation by PacificLight.
+  </footer>
+
+  <script>
+    const form = document.getElementById('quoteForm');
+    const result = document.getElementById('resultBox');
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      const requestId = 'PL-CQ-' + new Date().toISOString().slice(0,10).replaceAll('-', '') + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      console.log('Commercial quote request', { requestId, ...data });
+      result.innerHTML = '<strong>Quote request submitted</strong>Thank you. Your request ID is <b>' + requestId + '</b>. A PacificLight consultant will follow up with the details provided.';
+      result.style.display = 'block';
+      result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  </script>
+</body>
+</html>

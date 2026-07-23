@@ -1,17 +1,46 @@
 {
-  "identityKeys": ["统一客户 ID", "手机号", "邮箱", "渠道用户 ID", "CRM external_id", "自定义变量"],
-  "timeline": [
-    { "id": "m1", "type": "偏好", "key": "language", "value": "中文", "channel": "网页插件", "time": "2026-07-20 09:12", "status": "active", "confidence": 0.98 },
-    { "id": "m2", "type": "事实", "key": "company", "value": "ABC Manufacturing", "channel": "WhatsApp", "time": "2026-07-18 16:30", "status": "active", "confidence": 0.96 },
-    { "id": "m3", "type": "任务", "key": "refund_case", "value": "退款审核中 · RF-20260718", "channel": "Udesk IM", "time": "2026-07-18 14:02", "status": "active", "confidence": 1 },
-    { "id": "m4", "type": "事实", "key": "city", "value": "上海", "channel": "X Direct Messages", "time": "2026-07-10 11:24", "status": "conflict", "confidence": 0.72 }
-  ],
-  "conflict": {
-    "key": "city",
-    "current": "杭州",
-    "incoming": "上海",
-    "currentSource": "CRM",
-    "incomingSource": "X Direct Messages",
-    "recommended": "保留 CRM 值"
-  }
+  "identityKeys": ["CRM external_id", "已登录用户 ID", "手机号", "邮箱", "渠道用户 ID", "自定义变量"],
+  "customers": [
+    {
+      "id": "cus_7H2K9P",
+      "name": "张宁",
+      "company": "ABC Manufacturing",
+      "phone": "+65 8000 2026",
+      "email": "zhangning@abc.com",
+      "updatedAt": "2026-07-21 16:42",
+      "channels": [
+        { "id": "identity-1", "name": "Udesk IM", "account": "user_981273", "status": "已验证", "source": "账号登录" },
+        { "id": "identity-2", "name": "网页插件", "account": "visitor_88201", "status": "已绑定", "source": "用户确认手机号" },
+        { "id": "identity-3", "name": "WhatsApp", "account": "+65 8000 2026", "status": "已验证", "source": "渠道手机号" }
+      ],
+      "profile": [
+        { "key": "customer_id", "name": "唯一客户 ID", "value": "cus_7H2K9P", "source": "系统生成", "channel": "统一身份", "updatedAt": "2026-06-18 09:30" },
+        { "key": "name", "name": "姓名", "value": "张宁", "source": "提示词抽取", "channel": "Udesk IM", "updatedAt": "2026-07-18 10:12" },
+        { "key": "phone", "name": "手机", "value": "+65 8000 2026", "source": "渠道字段", "channel": "WhatsApp", "updatedAt": "2026-07-18 10:12" },
+        { "key": "email", "name": "邮箱", "value": "zhangning@abc.com", "source": "提示词抽取", "channel": "网页插件", "updatedAt": "2026-07-20 14:26" },
+        { "key": "company", "name": "公司", "value": "ABC Manufacturing", "source": "提示词抽取", "channel": "WhatsApp", "updatedAt": "2026-07-18 10:12" },
+        { "key": "plan", "name": "客户套餐", "value": "Enterprise", "source": "提示词抽取", "channel": "Udesk IM", "updatedAt": "2026-07-21 16:42" }
+      ],
+      "summaries": [
+        { "id": "summary-1", "conversationId": "conv_20260721_2381", "channel": "Udesk IM", "time": "2026-07-21 16:42", "issue": "API 请求频繁返回 429", "actions": ["确认 Enterprise 套餐", "查询当前 API 限额"], "result": "已创建额度调整工单", "pending": "等待技术支持确认新限额", "request": "希望提高生产环境 API 限额" },
+        { "id": "summary-2", "conversationId": "conv_20260718_1106", "channel": "WhatsApp", "time": "2026-07-18 10:18", "issue": "询问 6 月用量报告", "actions": ["核对账户和报告周期", "生成 PDF 报告"], "result": "报告已发送至注册邮箱", "pending": "", "request": "获取 2026 年 6 月用量报告" },
+        { "id": "summary-3", "conversationId": "conv_20260712_0632", "channel": "网页插件", "time": "2026-07-12 11:05", "issue": "OAuth 回调地址配置失败", "actions": ["检查回调域名", "指导更新控制台配置"], "result": "问题已解决", "pending": "", "request": "完成 OAuth 应用接入" }
+      ]
+    },
+    {
+      "id": "cus_4D8M1Q",
+      "name": "李晨",
+      "company": "Northstar Retail",
+      "phone": "+86 138 0000 6721",
+      "email": "lichen@northstar.cn",
+      "updatedAt": "2026-07-20 09:14",
+      "channels": [{ "id": "identity-4", "name": "网页插件", "account": "member_44210", "status": "已验证", "source": "账号登录" }],
+      "profile": [
+        { "key": "customer_id", "name": "唯一客户 ID", "value": "cus_4D8M1Q", "source": "系统生成", "channel": "统一身份", "updatedAt": "2026-07-01 12:20" },
+        { "key": "name", "name": "姓名", "value": "李晨", "source": "账号字段", "channel": "网页插件", "updatedAt": "2026-07-01 12:20" },
+        { "key": "company", "name": "公司", "value": "Northstar Retail", "source": "提示词抽取", "channel": "网页插件", "updatedAt": "2026-07-20 09:14" }
+      ],
+      "summaries": [{ "id": "summary-4", "conversationId": "conv_20260720_0712", "channel": "网页插件", "time": "2026-07-20 09:14", "issue": "导出订单时报错", "actions": ["检查文件格式", "重新生成导出任务"], "result": "已恢复导出", "pending": "", "request": "导出上季度订单" }]
+    }
+  ]
 }

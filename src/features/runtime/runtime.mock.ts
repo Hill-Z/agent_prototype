@@ -1,13 +1,19 @@
 import type { EvaluationResult } from '../guardrail/guardrail.types';
 import multimodalMock from '../../../prototype-content/multimodal.mock.json';
 import conversationMock from '../../../prototype-content/conversation.mock.json';
-import type { RuntimeAttachment, RuntimeScenario, RuntimeStep } from './runtime.types';
+import planningMock from '../../../prototype-content/planning.mock.json';
+import type { RuntimeAttachment, RuntimePlan, RuntimeScenario, RuntimeStep } from './runtime.types';
+import type { PlanningConfig } from '../agent/agent.types';
 
 const step = (id: string, kind: RuntimeStep['kind'], title: string, detail: string, durationMs: number): RuntimeStep => ({ id, kind, title, detail, durationMs });
 
 export const getMockAsrTranscript = () => multimodalMock.audio.recognition.detail;
 
-export function createRuntimeScenario(input: string, result: EvaluationResult, fallbackReply: string, attachments: RuntimeAttachment[] = []): RuntimeScenario {
+const reportPlan = planningMock.report as RuntimePlan;
+const shouldPlan = (planning: PlanningConfig | undefined, complex: boolean) => Boolean(planning?.enabled && (planning.triggerMode === 'always' || complex));
+const attachPlan = (scenario: RuntimeScenario, planning: PlanningConfig | undefined, complex = false): RuntimeScenario => shouldPlan(planning, complex) ? { ...scenario, plan: scenario.id === 'long-running-report' ? reportPlan : { goal: '完成当前客户请求', steps: scenario.steps.map((item, index) => ({ id: `plan-${index + 1}`, title: item.title, capability: item.detail, runtimeStepId: item.id })) } } : scenario;
+
+export function createRuntimeScenario(input: string, result: EvaluationResult, fallbackReply: string, attachments: RuntimeAttachment[] = [], planning?: PlanningConfig): RuntimeScenario {
   const safeInput = result.transformedText;
   const images = attachments.filter(item => item.kind === 'image').length;
   const audios = attachments.filter(item => item.kind === 'audio').length;
@@ -17,7 +23,7 @@ export function createRuntimeScenario(input: string, result: EvaluationResult, f
     const mediaSteps: RuntimeStep[] = [];
     if (images) mediaSteps.push(step('vision', 'vision', audios ? '正在理解图片' : '正在理解图片', `使用视觉模型处理 ${images} 张图片并提取 OCR 文字`, 620));
     if (audios) mediaSteps.push(step('asr', 'asr', audios && images ? '正在识别语音' : '正在识别语音', `音频转码后使用 ASR 识别 ${audios} 段语音`, 480));
-    return {
+    return attachPlan({
       id: `multimodal-${key}`,
       reply: mock.reply,
       recognition: mock.recognition,
@@ -26,7 +32,7 @@ export function createRuntimeScenario(input: string, result: EvaluationResult, f
         ...mediaSteps,
         step('compose-media', 'generation', '正在整理回复', '合并用户文字和媒体识别结果后生成回复', 360)
       ]
-    };
+    }, planning);
   }
   if (result.decision === 'BLOCK') {
     return {
@@ -52,7 +58,7 @@ export function createRuntimeScenario(input: string, result: EvaluationResult, f
     };
   }
   if (input.includes(conversationMock.longTask.trigger)) {
-    return {
+    return attachPlan({
       id: 'long-running-report',
       reply: conversationMock.longTask.finalMessage,
       messages: [conversationMock.longTask.finalMessage],
@@ -63,10 +69,10 @@ export function createRuntimeScenario(input: string, result: EvaluationResult, f
         step('tool', 'tool', '正在生成报表', '异步聚合本月客服数据', 1600),
         step('compose', 'generation', '整理报表结果', '生成结果摘要和查看入口', 360)
       ]
-    };
+    }, planning, true);
   }
   if (input.includes(conversationMock.longReply.trigger)) {
-    return {
+    return attachPlan({
       id: 'segmented-order-reply',
       reply: conversationMock.longReply.messages.join('\n\n'),
       messages: conversationMock.longReply.messages,
@@ -75,10 +81,10 @@ export function createRuntimeScenario(input: string, result: EvaluationResult, f
         step('tool', 'tool', '查询物流详情', '返回配送节点和预计送达时间', 620),
         step('plan-messages', 'generation', '规划多条回复', '按结论、详情和下一步建议拆成3条消息', 360)
       ]
-    };
+    }, planning);
   }
   if (/订单|物流|配送|快递/.test(input)) {
-    return {
+    return attachPlan({
       id: 'order-query',
       reply: '您的订单目前正在配送中，预计今天 18:00 前送达。',
       steps: [
@@ -88,9 +94,9 @@ export function createRuntimeScenario(input: string, result: EvaluationResult, f
         step('tool', 'tool', '调用订单中心', 'get_order_delivery 返回 1 条配送记录', 620),
         step('compose', 'generation', '整理回复', '合并配送状态与预计送达时间', 330)
       ]
-    };
+    }, planning);
   }
-  return {
+  return attachPlan({
     id: 'knowledge-answer',
     reply: `已根据当前知识库整理：${safeInput}`,
     steps: [
@@ -100,5 +106,5 @@ export function createRuntimeScenario(input: string, result: EvaluationResult, f
       step('knowledge', 'knowledge', '检索知识库', '召回 4 条内容，重排后保留 2 条', 510),
       step('compose', 'generation', '生成最终回复', '根据召回内容生成完整答案并执行输出护栏', 360)
     ]
-  };
+  }, planning);
 }

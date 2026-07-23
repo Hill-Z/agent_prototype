@@ -1,0 +1,11 @@
+{
+  "report": {
+    "goal": "生成本月客服运营报表",
+    "steps": [
+      { "id": "plan-1", "title": "确认报表范围", "capability": "对话信息提取", "runtimeStepId": "receive" },
+      { "id": "plan-2", "title": "规划数据查询", "capability": "报表生成 Skill", "runtimeStepId": "plan" },
+      { "id": "plan-3", "title": "聚合客服数据", "capability": "客服数据查询 Tool", "runtimeStepId": "tool" },
+      { "id": "plan-4", "title": "生成报表结果", "capability": "回复生成", "runtimeStepId": "compose" }
+    ]
+  }
+}
