@@ -3,6 +3,7 @@ import type { EvaluationResult } from '../guardrail/guardrail.types';
 export type RuntimeStepKind = 'analysis' | 'guardrail' | 'skill' | 'knowledge' | 'tool' | 'generation' | 'vision' | 'asr';
 
 export type RuntimeAttachmentKind = 'image' | 'audio';
+export type RuntimeChannel = 'udesk_im' | 'web' | 'whatsapp' | 'x_dm';
 
 export interface RuntimeAttachment {
   id: string;
@@ -28,17 +29,31 @@ export interface RuntimeStep {
   durationMs: number;
 }
 
+export interface RuntimePlanStep {
+  id: string;
+  title: string;
+  capability: string;
+  runtimeStepId: string;
+}
+
+export interface RuntimePlan {
+  goal: string;
+  steps: RuntimePlanStep[];
+}
+
 export interface RuntimeScenario {
   id: string;
   reply: string;
   messages?: string[];
   waitMessage?: string;
   steps: RuntimeStep[];
+  plan?: RuntimePlan;
   recognition?: RecognitionResult;
 }
 
 export interface RuntimeRun {
   id: string;
+  channel: RuntimeChannel;
   input: string;
   attachments: RuntimeAttachment[];
   result: EvaluationResult;
@@ -50,4 +65,5 @@ export interface RuntimeRun {
   typingVisible: boolean;
   completed: boolean;
   cancelled: boolean;
+  queued?: boolean;
 }

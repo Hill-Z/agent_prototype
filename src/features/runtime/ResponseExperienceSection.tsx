@@ -16,8 +16,8 @@ export function ResponseExperienceSection({ config, update }: { config: AgentCon
       </div>
     </div> : null}
     <div className="response-experience-body">
-      <div className="setting-line"><strong>长回复拆成多条消息</strong><Switch checked={experience.splitLongRepliesEnabled} onChange={splitLongRepliesEnabled => set({ splitLongRepliesEnabled })} label="长回复拆成多条消息" /></div>
-      {experience.splitLongRepliesEnabled ? <div className="compact-number-field"><label>最多发送消息数<input aria-label="最多发送消息数" type="number" min={2} max={5} value={experience.maxReplyMessages} onChange={event => set({ maxReplyMessages: Number(event.target.value) })} /></label></div> : null}
+      <div className="setting-line"><strong>多条消息回复</strong><Switch checked={experience.splitLongRepliesEnabled} onChange={splitLongRepliesEnabled => set({ splitLongRepliesEnabled })} label="多条消息回复" /></div>
+      {experience.splitLongRepliesEnabled ? <div className="multi-message-config"><div className="fixed-policy-value"><span>输出方式</span><strong>完整生成后分段发送</strong></div><label>最多发送消息数<input aria-label="最多发送消息数" type="number" min={2} max={5} value={experience.maxReplyMessages} onChange={event => set({ maxReplyMessages: Number(event.target.value) })} /></label><label>消息发送间隔<input aria-label="消息发送间隔" type="number" min={0} max={5000} step={100} value={experience.messageIntervalMs} onChange={event => set({ messageIntervalMs: Number(event.target.value) })} /><span>毫秒</span></label></div> : null}
     </div>
   </ConfigSection>;
 }

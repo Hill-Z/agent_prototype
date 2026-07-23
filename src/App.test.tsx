@@ -16,90 +16,117 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getByText('new高级智能体')).toBeInTheDocument();
     expect(screen.getAllByText('Doubao-Seed-2.0-pro').length).toBeGreaterThan(0);
 
-    for (const section of ['提示词', '思考模式', '回复体验', '对话管理', '主动服务', '多模态输入', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
+    for (const section of ['提示词', '思考模式', '复杂任务规划', '回复体验', '对话管理', '主动服务', '多模态输入', '变量', '技能', '工具', '知识库', '长期记忆', '上下文压缩', '会话变量', '反思机制', '人工审核', '护栏配置']) {
       expect(screen.getByRole('heading', { name: section })).toBeInTheDocument();
     }
   });
 
-  it('configures channel-native capabilities, behavior rules and context variables', async () => {
+  it('configures complex-task planning and persists the Planner Prompt', async () => {
     const user = userEvent.setup();
     render(<App />);
+    const section = screen.getByRole('heading', { name: '复杂任务规划' }).closest('section')!;
 
-    await user.click(screen.getByRole('button', { name: '渠道' }));
-    expect(screen.getByRole('heading', { name: 'WhatsApp' })).toBeInTheDocument();
-    expect(screen.getByText('Reply Button')).toBeInTheDocument();
+    expect(within(section).getByRole('checkbox', { name: '启用复杂任务规划' })).toBeChecked();
+    expect(within(section).getByRole('button', { name: '自动判断' })).toHaveClass('active');
+    expect((within(section).getByLabelText('Planner Prompt') as HTMLTextAreaElement).value).toContain('每次只执行一个步骤');
 
-    await user.click(screen.getByRole('button', { name: '降级' }));
-    expect(screen.getByText('已降级为文本消息')).toBeInTheDocument();
-    expect(screen.getAllByText('编号选项或模板文本')).toHaveLength(1);
+    await user.click(within(section).getByRole('button', { name: '每次均规划' }));
+    const prompt = within(section).getByLabelText('Planner Prompt');
+    await user.clear(prompt);
+    await user.type(prompt, '先生成结构化计划，再逐步执行。');
 
-    await user.click(screen.getByRole('button', { name: '行为规则' }));
-    expect(screen.getByText('WhatsApp 首次会话隐私告知')).toBeInTheDocument();
-    await user.click(screen.getByRole('checkbox', { name: '启用WhatsApp 首次会话隐私告知' }));
-    expect(screen.getByRole('checkbox', { name: '启用WhatsApp 首次会话隐私告知' })).not.toBeChecked();
-
-    await user.click(screen.getByRole('button', { name: '上下文变量' }));
-    expect(screen.getByText('channel.capabilities')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: '启用channel.capabilities' })).toBeChecked();
+    const stored = JSON.parse(localStorage.getItem('uagent-advanced-config-v1') ?? '{}').planning;
+    expect(stored.triggerMode).toBe('always');
+    expect(stored.plannerPrompt).toBe('先生成结构化计划，再逐步执行。');
   });
 
-  it('makes channel setup, fallback, preview and rule actions usable', async () => {
+  it('shows the active plan compactly and expands the full execution steps', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: '渠道' }));
 
-    await user.click(screen.getByRole('button', { name: '渠道设置' }));
-    await user.clear(screen.getByLabelText('渠道设置账号'));
-    await user.type(screen.getByLabelText('渠道设置账号'), '+65 9000 0000');
-    await user.click(screen.getByRole('button', { name: '保存' }));
-    expect(screen.getAllByText('+65 9000 0000')).toHaveLength(2);
+    await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '帮我生成报表');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
 
-    await user.click(screen.getByRole('button', { name: '编辑' }));
-    await user.selectOptions(screen.getByLabelText('降级格式'), '仅纯文本');
-    await user.click(screen.getByRole('button', { name: '保存' }));
-    expect(screen.getByText('仅纯文本')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '发送测试消息' }));
-    await user.click(screen.getByRole('button', { name: '行为规则' }));
-    await user.click(screen.getByRole('button', { name: '新建规则' }));
-    await user.type(screen.getByLabelText('规则名称'), '短消息规则');
-    await user.selectOptions(screen.getByLabelText('规则生效条件'), '消息发送失败');
-    await user.selectOptions(screen.getByLabelText('规则执行动作'), '优先使用短文本');
-    await user.click(screen.getByRole('button', { name: '创建' }));
-    expect(screen.getByText('短消息规则')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '添加渠道' }));
-    await user.selectOptions(screen.getByLabelText('渠道类型'), 'telegram');
-    await user.type(screen.getByLabelText('渠道账号'), '@uagent_support');
-    await user.click(screen.getByRole('button', { name: '添加' }));
-    expect(screen.getByRole('heading', { name: 'Telegram' })).toBeInTheDocument();
-    expect(screen.getAllByText('待授权').length).toBeGreaterThanOrEqual(1);
+    const summary = screen.getByLabelText('查看执行计划');
+    const details = summary.closest('details')!;
+    expect(details).not.toHaveAttribute('open');
+    expect(screen.getByRole('status')).toHaveTextContent('理解报表需求');
+    await user.click(summary);
+    expect(details).toHaveAttribute('open');
+    expect(screen.getByText('生成本月客服运营报表')).toBeInTheDocument();
+    expect(screen.getByText('确认报表范围')).toBeInTheDocument();
+    expect(screen.getByText('聚合客服数据')).toBeInTheDocument();
   });
 
-  it('manages cross-channel identity, temporal memory and a conflict decision', async () => {
+  it('simulates the IM channel without exposing channel setup in Agent configuration', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const agentTabs = document.querySelector('.agent-tabs') as HTMLElement;
+    expect(within(agentTabs).queryByRole('button', { name: '渠道' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('消息类型')).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('模拟渠道'), 'whatsapp');
+    await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '帮我查询订单');
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
+    expect(document.querySelector('.runtime-channel')).toHaveTextContent('WhatsApp');
+  });
+
+  it('expands the global sidebar and shows read-only channel capabilities outside Agent configuration', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '长期记忆' }));
+    await user.click(screen.getByRole('button', { name: '展开侧边栏' }));
+    expect(screen.getByRole('button', { name: '收起侧边栏' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '渠道' })).toHaveTextContent('渠道');
+
+    await user.click(screen.getByRole('button', { name: '渠道' }));
+    expect(screen.getByRole('heading', { name: '渠道能力' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试连接' })).not.toBeInTheDocument();
+    expect(screen.queryByText('行为规则')).not.toBeInTheDocument();
+    expect(screen.getByText('接收能力')).toBeInTheDocument();
+    expect(screen.getByText('发送能力')).toBeInTheDocument();
+    expect(screen.getAllByText('已接入')).toHaveLength(4);
+    expect(screen.queryByRole('button', { name: '新增渠道' })).not.toBeInTheDocument();
+    expect(screen.queryByText('channel')).not.toBeInTheDocument();
+  });
+
+  it('configures lightweight customer memory and binds cross-channel identities', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '记忆库' }));
     expect(screen.getByRole('heading', { name: '长期记忆' })).toBeInTheDocument();
-    expect(screen.getByText('退款审核中 · RF-20260718')).toBeInTheDocument();
-    expect(screen.getByText('待解决冲突')).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText('主标识'), 'CRM external_id');
-    expect(screen.getByLabelText('主标识')).toHaveValue('CRM external_id');
-    expect(JSON.parse(localStorage.getItem('uagent-advanced-config-v1') ?? '{}').longMemory.identityKey).toBe('CRM external_id');
-    await user.click(screen.getByRole('button', { name: '身份映射' }));
-    expect(screen.getByRole('dialog', { name: '身份映射' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '完成' }));
-    await user.click(screen.getByRole('button', { name: '偏好' }));
-    expect(screen.getByText('中文')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '人工添加' }));
-    await user.selectOptions(screen.getByLabelText('记忆类型'), '偏好');
-    await user.type(screen.getByLabelText('记忆 Key'), 'vip_level');
-    await user.type(screen.getByLabelText('记忆值'), 'gold');
+    expect(screen.getByText('客户资料 Profile')).toBeInTheDocument();
+    expect(screen.getByText('会话摘要 Summary')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('主标识'), '已登录用户 ID');
+    expect(screen.getByLabelText('主标识')).toHaveValue('已登录用户 ID');
+    await user.click(screen.getByRole('button', { name: '自定义字段' }));
+    await user.type(screen.getByLabelText('自定义字段名称'), '客户套餐');
+    await user.type(screen.getByLabelText('自定义字段 Key'), 'plan');
     await user.click(screen.getByRole('button', { name: '添加' }));
-    expect(screen.getByText('gold')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '采用推荐结果' }));
-    expect(screen.getByText('冲突已解决')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('客户套餐')).toBeInTheDocument();
+    await user.clear(screen.getByLabelText('历史小结数量'));
+    await user.type(screen.getByLabelText('历史小结数量'), '4');
+    expect((screen.getByLabelText('客户资料抽取提示词') as HTMLTextAreaElement).value).toContain('不要猜测');
+    expect((screen.getByLabelText('会话摘要提示词') as HTMLTextAreaElement).value).toContain('未解决事项');
+    const stored = JSON.parse(localStorage.getItem('uagent-advanced-config-v1') ?? '{}').longMemory;
+    expect(stored.identityKey).toBe('已登录用户 ID');
+    expect(stored.profileFields.some((field: { key: string }) => field.key === 'plan')).toBe(true);
+    expect(stored.recallCount).toBe(4);
+
+    await user.click(screen.getByRole('button', { name: '客户记忆' }));
+    expect(screen.getAllByText('ABC Manufacturing')).toHaveLength(2);
+    expect(screen.getByText('Enterprise')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '身份绑定' }));
+    expect(screen.getByRole('dialog', { name: '身份绑定' })).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('绑定渠道'), 'Telegram');
+    await user.type(screen.getByLabelText('渠道用户标识'), '@zhangning');
+    await user.click(screen.getByRole('button', { name: '绑定' }));
+    expect(screen.getAllByText('@zhangning')).toHaveLength(2);
+    expect(screen.getAllByText('待验证')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: '完成' }));
+    await user.click(screen.getByRole('button', { name: '会话摘要' }));
+    expect(screen.getByText('API 请求频繁返回 429')).toBeInTheDocument();
+    expect(screen.getByText('等待技术支持确认新限额')).toBeInTheDocument();
   });
 
   it('separates realtime monitoring from historical reports', async () => {
@@ -128,6 +155,23 @@ describe('advanced agent configuration prototype', () => {
     expect(await screen.findByText('我查到了，您的订单目前正在配送中。', {}, { timeout: 4000 })).toBeInTheDocument();
     expect(await screen.findByText(/物流信息显示包裹今天上午已经到达本地配送站/, {}, { timeout: 4000 })).toBeInTheDocument();
     expect(await screen.findByText(/如果今晚仍未收到/, {}, { timeout: 4000 })).toBeInTheDocument();
+  });
+
+  it('configures input completion and keeps runtime message handling as fixed platform rules', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const conversation = screen.getByRole('heading', { name: '对话管理' }).closest('section')!;
+    expect(within(conversation).getByRole('checkbox', { name: '连续消息合并' })).toBeChecked();
+    await user.selectOptions(within(conversation).getByLabelText('输入结束判断'), 'typing');
+    expect(within(conversation).getByLabelText('输入等待时间')).toHaveValue(5);
+    expect(within(conversation).getByText('合并消息并重新执行')).toBeInTheDocument();
+    expect(within(conversation).getByText('继续当前回复，进入下一轮队列')).toBeInTheDocument();
+    expect(within(conversation).queryByText('用户插话时停止后续消息')).not.toBeInTheDocument();
+
+    const response = screen.getByRole('heading', { name: '回复体验' }).closest('section')!;
+    expect(within(response).getByRole('checkbox', { name: '多条消息回复' })).toBeChecked();
+    expect(within(response).getByText('完整生成后分段发送')).toBeInTheDocument();
+    expect(within(response).getByLabelText('消息发送间隔')).toHaveValue(800);
   });
 
   it('sends one natural wait message before a long-running result', async () => {
@@ -235,6 +279,7 @@ describe('advanced agent configuration prototype', () => {
 
     const responseSection = screen.getByRole('heading', { name: '回复体验' }).closest('section')!;
     await user.click(within(responseSection).getByRole('checkbox', { name: '模拟真人回复节奏' }));
+    await user.click(within(responseSection).getByRole('checkbox', { name: '多条消息回复' }));
     await user.type(screen.getByPlaceholderText('和机器人聊一聊吧'), '再查询一次订单状态');
     await user.click(screen.getByRole('button', { name: '发送消息' }));
     expect(container.querySelector('.streaming-message')).toBeInTheDocument();
@@ -242,7 +287,11 @@ describe('advanced agent configuration prototype', () => {
 
   it('restores legacy saved configurations without response experience fields', async () => {
     const user = userEvent.setup();
-    localStorage.setItem('uagent-advanced-config-saved-v1', JSON.stringify({ prompt: '旧版本保存的提示词', thinkingMode: 'fast' }));
+    localStorage.setItem('uagent-advanced-config-saved-v1', JSON.stringify({
+      prompt: '旧版本保存的提示词',
+      thinkingMode: 'fast',
+      longMemory: { enabled: true, backupKeys: null, profileFields: null, profilePrompt: null, summaryPrompt: null }
+    }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: '恢复已保存配置' }));
@@ -250,6 +299,9 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getByDisplayValue('旧版本保存的提示词')).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: '模拟真人回复节奏' })).toBeChecked();
     expect(screen.getByLabelText('输入状态节奏')).toHaveValue('natural');
+    await user.click(screen.getByRole('button', { name: '记忆库' }));
+    expect(screen.getByText('客户资料 Profile')).toBeInTheDocument();
+    expect((screen.getByLabelText('客户资料抽取提示词') as HTMLTextAreaElement).value).toContain('只提取用户明确表达的信息');
   });
 
   it('resizes the preview panel with the keyboard-accessible divider', async () => {
