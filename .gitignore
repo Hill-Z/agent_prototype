@@ -4,3 +4,8 @@ Thumbs.db
 node_modules/
 dist/
 *.tsbuildinfo
+
+# Local research and skill-package snapshots; keep them out of the product repository.
+2026-6-26/
+_skills_inspect/
+agent_research/
