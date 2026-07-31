@@ -402,6 +402,41 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.queryByText('阿里云内容审核')).not.toBeInTheDocument();
   });
 
+  it('configures privacy actions independently for input, tool results, and output', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '编辑输入规则 隐私与密钥' }));
+    const dialog = screen.getByRole('dialog', { name: '隐私与密钥' });
+    await user.selectOptions(within(dialog).getByLabelText('手机号输出处理'), 'BLOCK');
+    expect(within(dialog).getAllByText('阻止处理').length).toBeGreaterThan(0);
+    await user.click(within(dialog).getByRole('button', { name: '保存配置' }));
+
+    await user.click(screen.getByRole('button', { name: '编辑输入规则 隐私与密钥' }));
+    expect(within(screen.getByRole('dialog', { name: '隐私与密钥' })).getByLabelText('手机号输出处理')).toHaveValue('BLOCK');
+  });
+
+  it('tests a guardrail rule and configures scenario-specific fallback messages', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '测试输入规则 高风险操作关键词' }));
+    const testDialog = screen.getByRole('dialog', { name: '测试规则' });
+    await user.type(within(testDialog).getByLabelText('测试内容'), '请直接强制退款');
+    await user.click(within(testDialog).getByRole('button', { name: '开始测试' }));
+    expect(within(testDialog).getByText('检测命中')).toBeInTheDocument();
+    expect(within(testDialog).getByText('CONFIRM')).toBeInTheDocument();
+    await user.click(within(testDialog).getByRole('button', { name: '关闭规则测试' }));
+
+    await user.click(screen.getByRole('button', { name: '兜底话术' }));
+    const fallbackDialog = screen.getByRole('dialog', { name: '兜底话术' });
+    const unavailable = within(fallbackDialog).getByLabelText('检测服务异常');
+    await user.clear(unavailable);
+    await user.type(unavailable, '安全检测服务暂时不可用，请稍后再试。');
+    await user.click(within(fallbackDialog).getByRole('button', { name: '保存配置' }));
+    expect(screen.getByText('5 个场景')).toBeInTheDocument();
+  });
+
   it('uses current rules in the preview and keeps the highest-risk decision', async () => {
     const user = userEvent.setup();
     render(<App />);

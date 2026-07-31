@@ -4,6 +4,9 @@ export type RuleType = 'KEYWORD' | 'REGEX' | 'CONTENT_MODERATION' | 'CUSTOM';
 export type GuardrailAction = 'ALLOW' | 'MASK' | 'BLOCK' | 'CONFIRM' | 'HANDOFF' | 'REWRITE';
 export type FailureMode = 'ALLOW_AND_LOG' | 'BLOCK_WITH_FALLBACK' | 'HANDOFF';
 export type MatchMode = 'CONTAINS' | 'EXACT' | 'WHOLE_WORD';
+export type GuardrailHealth = 'READY' | 'INCOMPLETE' | 'ERROR';
+export type PrivacyEntityType = 'PHONE' | 'ID_CARD' | 'BANK_CARD' | 'EMAIL' | 'API_KEY' | 'ACCESS_TOKEN';
+export type PrivacyAction = 'TOKENIZE' | 'MASK' | 'REMOVE' | 'BLOCK' | 'PASS';
 
 export interface MatcherConfig {
   keywords?: string[];
@@ -36,16 +39,21 @@ export interface GuardrailRule {
   timeoutMs?: number;
   failureMode?: FailureMode;
   customHttp?: CustomHttpConfig;
+  health?: GuardrailHealth;
+  lastTestedAt?: string;
+}
+
+export interface PrivacyEntityPolicy {
+  input: PrivacyAction;
+  toolResult: PrivacyAction;
+  output: PrivacyAction;
 }
 
 export interface PrivacyConfig {
-  enabled: boolean;
-  entityTypes: string[];
-  modelInputAction: 'TOKENIZE' | 'MASK' | 'BLOCK';
-  outputAction: 'MASK' | 'BLOCK' | 'PASS';
-  allowedToolIds: string[];
-  memoryAction: 'DROP' | 'MASK';
-  logAction: 'MASK' | 'TYPE_ONLY';
+  inputEnabled: boolean;
+  toolResultEnabled: boolean;
+  outputEnabled: boolean;
+  entityPolicies: Record<PrivacyEntityType, PrivacyEntityPolicy>;
 }
 
 export interface BuiltinGuardrailConfig {
@@ -56,7 +64,13 @@ export interface BuiltinGuardrailConfig {
 
 export interface GuardrailConfig {
   enabled: boolean;
-  fallbackReply: string;
+  fallbackReplies: {
+    contentBlocked: string;
+    privacyHandled: string;
+    detectorUnavailable: string;
+    handoff: string;
+    rewriteFailed: string;
+  };
   privacy: PrivacyConfig;
   builtin: BuiltinGuardrailConfig;
   rules: GuardrailRule[];
@@ -71,15 +85,25 @@ export interface EvaluationResult {
 
 export const defaultGuardrailConfig: GuardrailConfig = {
   enabled: true,
-  fallbackReply: '抱歉，这个请求可能涉及敏感或高风险内容，我暂时无法直接处理。如需帮助，可以转接人工客服。',
+  fallbackReplies: {
+    contentBlocked: '抱歉，我暂时无法处理该请求。',
+    privacyHandled: '为保护您的信息，部分敏感内容已隐藏。',
+    detectorUnavailable: '当前暂时无法处理，请稍后再试。',
+    handoff: '这个问题需要人工客服进一步处理。',
+    rewriteFailed: '抱歉，我暂时无法提供合适的回答。'
+  },
   privacy: {
-    enabled: true,
-    entityTypes: ['PHONE', 'ID_CARD', 'BANK_CARD', 'EMAIL', 'API_KEY', 'ACCESS_TOKEN'],
-    modelInputAction: 'TOKENIZE',
-    outputAction: 'MASK',
-    allowedToolIds: ['customer-query', 'order-query'],
-    memoryAction: 'DROP',
-    logAction: 'MASK'
+    inputEnabled: true,
+    toolResultEnabled: true,
+    outputEnabled: true,
+    entityPolicies: {
+      PHONE: { input: 'MASK', toolResult: 'MASK', output: 'MASK' },
+      EMAIL: { input: 'TOKENIZE', toolResult: 'MASK', output: 'MASK' },
+      ID_CARD: { input: 'BLOCK', toolResult: 'REMOVE', output: 'BLOCK' },
+      BANK_CARD: { input: 'BLOCK', toolResult: 'REMOVE', output: 'BLOCK' },
+      API_KEY: { input: 'BLOCK', toolResult: 'REMOVE', output: 'BLOCK' },
+      ACCESS_TOKEN: { input: 'BLOCK', toolResult: 'REMOVE', output: 'BLOCK' }
+    }
   },
   builtin: {
     contentSafety: true,
@@ -101,7 +125,8 @@ export const defaultGuardrailConfig: GuardrailConfig = {
         trimSpaces: true
       },
       action: 'CONFIRM',
-      enabled: true
+      enabled: true,
+      health: 'READY'
     },
     {
       id: 'rule-output-promises',
@@ -114,7 +139,8 @@ export const defaultGuardrailConfig: GuardrailConfig = {
         matchMode: 'CONTAINS'
       },
       action: 'REWRITE',
-      enabled: true
+      enabled: true,
+      health: 'READY'
     },
     {
       id: 'rule-aliyun-content',
@@ -128,7 +154,9 @@ export const defaultGuardrailConfig: GuardrailConfig = {
       providerId: 'aliyun-content-security',
       credentialId: 'credential-aliyun-prod',
       timeoutMs: 500,
-      failureMode: 'ALLOW_AND_LOG'
+      failureMode: 'ALLOW_AND_LOG',
+      health: 'READY',
+      lastTestedAt: '07-31 15:20'
     },
     {
       id: 'rule-aliyun-output',
@@ -142,7 +170,31 @@ export const defaultGuardrailConfig: GuardrailConfig = {
       providerId: 'aliyun-content-security',
       credentialId: 'credential-aliyun-prod',
       timeoutMs: 500,
-      failureMode: 'ALLOW_AND_LOG'
+      failureMode: 'ALLOW_AND_LOG',
+      health: 'READY',
+      lastTestedAt: '07-31 15:20'
+    },
+    {
+      id: 'rule-tool-sensitive-fields',
+      name: '工具敏感字段',
+      stages: ['TOOL_RESULT'],
+      executorType: 'LOCAL',
+      ruleType: 'CUSTOM',
+      matcher: {},
+      action: 'MASK',
+      enabled: true,
+      health: 'READY'
+    },
+    {
+      id: 'rule-tool-internal-errors',
+      name: '内部错误信息',
+      stages: ['TOOL_RESULT'],
+      executorType: 'LOCAL',
+      ruleType: 'REGEX',
+      matcher: { patterns: ['stack trace', 'internal server', 'jdbc:'], ignoreCase: true },
+      action: 'REWRITE',
+      enabled: true,
+      health: 'READY'
     }
   ]
 };

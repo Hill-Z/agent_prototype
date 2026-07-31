@@ -97,7 +97,7 @@ export function RuntimePreviewPanel({ guardrail, responseExperience, conversatio
     const shouldQueue = Boolean(activeRun && outputStarted);
     const scenarioInput = shouldReplan && activeRun ? `${activeRun.input}\n${displayInput}` : displayInput;
     const result = evaluateGuardrail(scenarioInput, guardrail, 'INPUT');
-    const baseScenario = createRuntimeScenario(scenarioInput, result, guardrail.fallbackReply, selectedAttachments, planning);
+    const baseScenario = createRuntimeScenario(scenarioInput, result, guardrail.fallbackReplies.contentBlocked, selectedAttachments, planning);
     const scenario = baseScenario.waitMessage ? { ...baseScenario, waitMessage: proactiveService.longTaskNoticeMessage } : baseScenario;
     const id = `run-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const replyMessages = getReplyMessages(scenario, responseExperience);

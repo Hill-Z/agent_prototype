@@ -2,7 +2,7 @@ import type { GuardrailConfig, GuardrailRule, PrivacyConfig } from './guardrail.
 
 export type GuardrailActionEvent =
   | { type: 'set-enabled'; enabled: boolean }
-  | { type: 'set-fallback'; fallbackReply: string }
+  | { type: 'set-fallbacks'; fallbackReplies: GuardrailConfig['fallbackReplies'] }
   | { type: 'set-privacy'; privacy: PrivacyConfig }
   | { type: 'set-builtin'; key: keyof GuardrailConfig['builtin']; enabled: boolean }
   | { type: 'add-rule'; rule: GuardrailRule }
@@ -13,8 +13,8 @@ export function guardrailReducer(state: GuardrailConfig, event: GuardrailActionE
   switch (event.type) {
     case 'set-enabled':
       return { ...state, enabled: event.enabled };
-    case 'set-fallback':
-      return { ...state, fallbackReply: event.fallbackReply };
+    case 'set-fallbacks':
+      return { ...state, fallbackReplies: event.fallbackReplies };
     case 'set-privacy':
       return { ...state, privacy: event.privacy };
     case 'set-builtin':

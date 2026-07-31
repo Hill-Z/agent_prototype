@@ -1,105 +1,108 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Save, X } from 'lucide-react';
-import type { GuardrailStage, PrivacyConfig } from './guardrail.types';
+import type { PrivacyAction, PrivacyConfig, PrivacyEntityType } from './guardrail.types';
 
 interface PrivacyDrawerProps {
   open: boolean;
-  stage: GuardrailStage;
   privacy: PrivacyConfig;
   onClose: () => void;
   onSave: (privacy: PrivacyConfig) => void;
 }
 
-const entities = [
-  ['PHONE', '手机号', false],
-  ['ID_CARD', '身份证', false],
-  ['BANK_CARD', '银行卡', false],
-  ['EMAIL', '邮箱', false],
-  ['API_KEY', 'API Key（强制）', true],
-  ['ACCESS_TOKEN', 'Access Token（强制）', true]
-] as const;
+const entities: Array<{ value: PrivacyEntityType; label: string; example: string; mandatory?: boolean }> = [
+  { value: 'PHONE', label: '手机号', example: '13812345678' },
+  { value: 'EMAIL', label: '邮箱', example: 'alex@example.com' },
+  { value: 'ID_CARD', label: '身份证', example: '110101199001011234' },
+  { value: 'BANK_CARD', label: '银行卡', example: '6222021234567890123' },
+  { value: 'API_KEY', label: 'API Key', example: 'sk-proj-1234567890', mandatory: true },
+  { value: 'ACCESS_TOKEN', label: 'Access Token', example: 'Bearer eyJhbGciOiJIUzI1NiJ9', mandatory: true }
+];
 
-export function PrivacyDrawer({ open, stage, privacy, onClose, onSave }: PrivacyDrawerProps) {
+const actionOptions: Array<{ value: PrivacyAction; label: string }> = [
+  { value: 'TOKENIZE', label: '替换为占位符' },
+  { value: 'MASK', label: '部分隐藏' },
+  { value: 'REMOVE', label: '完全移除' },
+  { value: 'BLOCK', label: '阻止处理' },
+  { value: 'PASS', label: '保持原文' }
+];
+
+function maskExample(entity: PrivacyEntityType, value: string, action: PrivacyAction): string {
+  if (action === 'PASS') return value;
+  if (action === 'REMOVE') return '（已移除）';
+  if (action === 'BLOCK') return '阻止处理';
+  if (action === 'TOKENIZE') return `{{${entity}_1}}`;
+  if (entity === 'PHONE') return '138****5678';
+  if (entity === 'EMAIL') return 'al***@example.com';
+  if (entity === 'ID_CARD') return '110101********1234';
+  if (entity === 'BANK_CARD') return '6222 **** **** 0123';
+  return '••••••••••••';
+}
+
+export function PrivacyDrawer({ open, privacy, onClose, onSave }: PrivacyDrawerProps) {
   const [draft, setDraft] = useState(privacy);
+  const [previewEntity, setPreviewEntity] = useState<PrivacyEntityType>('PHONE');
 
   useEffect(() => setDraft(structuredClone(privacy)), [open, privacy]);
 
+  const selected = useMemo(() => entities.find(entity => entity.value === previewEntity)!, [previewEntity]);
+
   if (!open) return null;
 
-  const toggleEntity = (entity: string) => {
+  const updatePolicy = (entity: PrivacyEntityType, stage: 'input' | 'toolResult' | 'output', action: PrivacyAction) => {
     setDraft(current => ({
       ...current,
-      entityTypes: current.entityTypes.includes(entity)
-        ? current.entityTypes.filter(item => item !== entity)
-        : [...current.entityTypes, entity]
+      entityPolicies: {
+        ...current.entityPolicies,
+        [entity]: { ...current.entityPolicies[entity], [stage]: action }
+      }
     }));
   };
 
   return (
     <div className="layer-backdrop" onMouseDown={event => event.target === event.currentTarget && onClose()}>
-      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="privacy-drawer-title">
+      <aside className="drawer privacy-policy-drawer" role="dialog" aria-modal="true" aria-labelledby="privacy-drawer-title">
         <header className="drawer-header">
-          <div><h2 id="privacy-drawer-title">配置隐私与密钥</h2><p>{stage === 'INPUT' ? '输入护栏' : '输出护栏'}</p></div>
+          <div><h2 id="privacy-drawer-title">隐私与密钥</h2></div>
           <button className="icon-button" onClick={onClose} aria-label="关闭隐私配置"><X size={18} /></button>
         </header>
 
         <div className="drawer-body">
-          <div className="form-section">
-            <span className="field-label">识别的数据类型</span>
-            <div className="check-grid">
-              {entities.map(([value, label, mandatory]) => (
-                <label className="check-option" key={value}>
-                  <input type="checkbox" checked={draft.entityTypes.includes(value)} disabled={mandatory} onChange={() => toggleEntity(value)} />
-                  {label}
-                </label>
-              ))}
+          <div className="privacy-matrix" role="table" aria-label="隐私数据处理矩阵">
+            <div className="privacy-matrix-row privacy-matrix-header" role="row">
+              <span>数据类型</span><span>用户输入</span><span>工具返回</span><span>Agent输出</span>
             </div>
-          </div>
-
-          {stage === 'INPUT' ? (
-            <>
-              <div className="form-section">
-                <label>发送给模型前
-                  <select value={draft.modelInputAction} onChange={event => setDraft({ ...draft, modelInputAction: event.target.value as PrivacyConfig['modelInputAction'] })}>
-                    <option value="TOKENIZE">Token 化：{'{{PHONE_1}}'}</option><option value="MASK">部分脱敏：138****8000</option><option value="BLOCK">阻断请求</option>
+            {entities.map(entity => (
+              <div className="privacy-matrix-row" role="row" key={entity.value}>
+                <strong>{entity.label}{entity.mandatory ? <i>强制保护</i> : null}</strong>
+                {(['input', 'toolResult', 'output'] as const).map(stage => (
+                  <select
+                    key={stage}
+                    aria-label={`${entity.label}${stage === 'input' ? '输入处理' : stage === 'toolResult' ? '工具返回处理' : '输出处理'}`}
+                    value={draft.entityPolicies[entity.value][stage]}
+                    onChange={event => updatePolicy(entity.value, stage, event.target.value as PrivacyAction)}
+                    disabled={entity.mandatory}
+                  >
+                    {actionOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
-                </label>
-                <p className="form-help">密钥类数据始终阻断，不允许原样发送给模型。</p>
+                ))}
               </div>
-              <div className="form-section">
-                <span className="field-label">允许恢复原值的工具</span>
-                <div className="check-grid">
-                  {[['customer-query', '客户查询'], ['order-query', '订单查询'], ['sms-send', '发送短信'], ['customer-update', '修改客户']].map(([value, label]) => (
-                    <label className="check-option" key={value}>
-                      <input type="checkbox" checked={draft.allowedToolIds.includes(value)} onChange={() => setDraft(current => ({ ...current, allowedToolIds: current.allowedToolIds.includes(value) ? current.allowedToolIds.filter(item => item !== value) : [...current.allowedToolIds, value] }))} />{label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="form-section">
-              <label>回复用户时
-                <select value={draft.outputAction} onChange={event => setDraft({ ...draft, outputAction: event.target.value as PrivacyConfig['outputAction'] })}>
-                  <option value="MASK">部分脱敏</option><option value="BLOCK">阻断输出</option><option value="PASS">按权限原样输出</option>
-                </select>
-              </label>
-              <p className="form-help">输出动作只影响发送给用户的内容，不改变 Tool 参数和模型输入。</p>
-            </div>
-          )}
-
-          <div className="form-section two-column-form">
-            <label>Memory
-              <select value={draft.memoryAction} onChange={event => setDraft({ ...draft, memoryAction: event.target.value as PrivacyConfig['memoryAction'] })}>
-                <option value="DROP">禁止保存原值</option><option value="MASK">脱敏后保存</option>
-              </select>
-            </label>
-            <label>Trace 与日志
-              <select value={draft.logAction} onChange={event => setDraft({ ...draft, logAction: event.target.value as PrivacyConfig['logAction'] })}>
-                <option value="MASK">部分脱敏</option><option value="TYPE_ONLY">仅记录命中类型</option>
-              </select>
-            </label>
+            ))}
           </div>
+
+          <section className="privacy-preview-panel">
+            <div className="privacy-preview-heading">
+              <strong>处理结果预览</strong>
+              <select aria-label="预览数据类型" value={previewEntity} onChange={event => setPreviewEntity(event.target.value as PrivacyEntityType)}>
+                {entities.map(entity => <option key={entity.value} value={entity.value}>{entity.label}</option>)}
+              </select>
+            </div>
+            <dl>
+              <div><dt>原文</dt><dd>{selected.example}</dd></div>
+              <div><dt>用户输入</dt><dd>{maskExample(selected.value, selected.example, draft.entityPolicies[selected.value].input)}</dd></div>
+              <div><dt>工具返回</dt><dd>{maskExample(selected.value, selected.example, draft.entityPolicies[selected.value].toolResult)}</dd></div>
+              <div><dt>Agent输出</dt><dd>{maskExample(selected.value, selected.example, draft.entityPolicies[selected.value].output)}</dd></div>
+            </dl>
+          </section>
         </div>
 
         <footer className="drawer-footer">
@@ -110,4 +113,3 @@ export function PrivacyDrawer({ open, stage, privacy, onClose, onSave }: Privacy
     </div>
   );
 }
-

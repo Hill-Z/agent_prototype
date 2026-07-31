@@ -3,7 +3,9 @@ import type {
   GuardrailAction,
   GuardrailConfig,
   GuardrailRule,
-  GuardrailStage
+  GuardrailStage,
+  PrivacyAction,
+  PrivacyEntityType
 } from './guardrail.types';
 
 const actionPriority: Record<GuardrailAction, number> = {
@@ -19,6 +21,7 @@ const secretPattern = /\b(?:sk-|ak-|api[_-]?key\s*[:=]|bearer\s+)[A-Za-z0-9._-]{
 const phonePattern = /\b1[3-9]\d{9}\b/g;
 const idCardPattern = /\b\d{17}[\dXx]\b/g;
 const bankCardPattern = /\b\d{16,19}\b/g;
+const emailPattern = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const injectionPattern = /(忽略|无视|绕过).{0,12}(规则|指令|限制)|系统提示词|developer message|reveal.{0,8}prompt/i;
 const prohibitedPattern = /(制作炸弹|实施诈骗|自杀方法|未成年人色情)/i;
 
@@ -59,7 +62,37 @@ function maskPii(text: string): string {
   return text
     .replace(phonePattern, value => `${value.slice(0, 3)}****${value.slice(-4)}`)
     .replace(idCardPattern, value => `${value.slice(0, 6)}********${value.slice(-4)}`)
-    .replace(bankCardPattern, value => `${value.slice(0, 4)} **** **** ${value.slice(-4)}`);
+    .replace(bankCardPattern, value => `${value.slice(0, 4)} **** **** ${value.slice(-4)}`)
+    .replace(emailPattern, value => {
+      const [name, domain] = value.split('@');
+      return `${name.slice(0, 2)}***@${domain}`;
+    });
+}
+
+const privacyPatterns: Partial<Record<PrivacyEntityType, RegExp>> = {
+  PHONE: phonePattern,
+  ID_CARD: idCardPattern,
+  BANK_CARD: bankCardPattern,
+  EMAIL: emailPattern
+};
+
+function privacyActionForStage(action: { input: PrivacyAction; toolResult: PrivacyAction; output: PrivacyAction }, stage: GuardrailStage): PrivacyAction {
+  return stage === 'INPUT' ? action.input : stage === 'TOOL_RESULT' ? action.toolResult : action.output;
+}
+
+function privacyEnabledForStage(config: GuardrailConfig, stage: GuardrailStage): boolean {
+  if (stage === 'INPUT') return config.privacy.inputEnabled;
+  if (stage === 'TOOL_RESULT') return config.privacy.toolResultEnabled;
+  return config.privacy.outputEnabled;
+}
+
+function applyPrivacyAction(text: string, entity: PrivacyEntityType, action: PrivacyAction, index: number): string {
+  const pattern = privacyPatterns[entity];
+  if (!pattern || action === 'PASS' || action === 'BLOCK') return text;
+  pattern.lastIndex = 0;
+  if (action === 'REMOVE') return text.replace(pattern, '');
+  if (action === 'TOKENIZE') return text.replace(pattern, `{{${entity}_${index}}}`);
+  return maskPii(text);
 }
 
 export function evaluateGuardrail(
@@ -81,12 +114,24 @@ export function evaluateGuardrail(
     if (config.builtin.contentSafety && prohibitedPattern.test(text)) {
       matches.push({ ruleId: 'platform-content-safety', detector: 'CONTENT', action: 'BLOCK' });
     }
-    if (config.privacy.enabled && (phonePattern.test(text) || idCardPattern.test(text) || bankCardPattern.test(text))) {
-      phonePattern.lastIndex = 0;
-      idCardPattern.lastIndex = 0;
-      bankCardPattern.lastIndex = 0;
-      transformedText = maskPii(text);
-      matches.push({ ruleId: 'platform-pii', detector: 'PII', action: 'MASK' });
+    if (privacyEnabledForStage(config, stage)) {
+      let privacyIndex = 0;
+      (Object.keys(config.privacy.entityPolicies) as PrivacyEntityType[]).forEach(entity => {
+        const pattern = privacyPatterns[entity];
+        if (!pattern) return;
+        pattern.lastIndex = 0;
+        if (!pattern.test(text)) return;
+        pattern.lastIndex = 0;
+        privacyIndex += 1;
+        const privacyAction = privacyActionForStage(config.privacy.entityPolicies[entity], stage);
+        if (privacyAction === 'PASS') return;
+        transformedText = applyPrivacyAction(transformedText, entity, privacyAction, privacyIndex);
+        matches.push({
+          ruleId: `platform-pii-${entity.toLowerCase()}`,
+          detector: entity,
+          action: privacyAction === 'BLOCK' ? 'BLOCK' : 'MASK'
+        });
+      });
     }
 
     config.rules

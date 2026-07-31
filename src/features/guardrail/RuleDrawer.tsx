@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlaskConical, Save, X } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import type {
   ExecutorType,
   FailureMode,
@@ -36,14 +36,14 @@ function newRule(stage: GuardrailStage): GuardrailRule {
     ruleType: 'KEYWORD',
     matcher: { keywords: [], matchMode: 'CONTAINS', ignoreCase: true, normalizeWidth: true, trimSpaces: true },
     action: 'BLOCK',
-    enabled: true
+    enabled: true,
+    health: 'READY'
   };
 }
 
 export function RuleDrawer({ open, stage, rule, onClose, onSave }: RuleDrawerProps) {
   const [draft, setDraft] = useState<GuardrailRule>(() => rule ?? newRule(stage));
   const [matcherText, setMatcherText] = useState('');
-  const [testResult, setTestResult] = useState('');
 
   useEffect(() => {
     const next = rule ? structuredClone(rule) : newRule(stage);
@@ -53,7 +53,6 @@ export function RuleDrawer({ open, stage, rule, onClose, onSave }: RuleDrawerPro
         ? (next.matcher.patterns ?? []).join('\n')
         : (next.matcher.keywords ?? []).join(', ')
     );
-    setTestResult('');
   }, [open, rule, stage]);
 
   if (!open) return null;
@@ -91,7 +90,8 @@ export function RuleDrawer({ open, stage, rule, onClose, onSave }: RuleDrawerPro
     const matcher = draft.ruleType === 'REGEX'
       ? { ...draft.matcher, patterns: matcherText.split('\n').map(value => value.trim()).filter(Boolean), keywords: undefined }
       : { ...draft.matcher, keywords: matcherText.split(',').map(value => value.trim()).filter(Boolean), patterns: undefined };
-    onSave({ ...draft, name: draft.name.trim(), matcher });
+    const health = draft.executorType === 'CUSTOM_HTTP' && !draft.customHttp?.endpoint.trim() ? 'INCOMPLETE' : draft.health ?? 'READY';
+    onSave({ ...draft, name: draft.name.trim(), matcher, health });
   };
 
   return (
@@ -205,10 +205,6 @@ export function RuleDrawer({ open, stage, rule, onClose, onSave }: RuleDrawerPro
             </div>
           ) : null}
 
-          <button className="secondary-button test-rule-button" onClick={() => setTestResult(draft.executorType === 'LOCAL' ? '本地规则可正常执行' : '模拟调用成功，响应映射有效')}>
-            <FlaskConical size={15} />测试当前规则
-          </button>
-          {testResult ? <p className="test-success">{testResult}</p> : null}
         </div>
 
         <footer className="drawer-footer">
@@ -223,4 +219,3 @@ export function RuleDrawer({ open, stage, rule, onClose, onSave }: RuleDrawerPro
 export function providerLabel(providerId?: string): string {
   return providers.find(provider => provider.value === providerId)?.label ?? '第三方服务';
 }
-
