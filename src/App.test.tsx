@@ -135,14 +135,63 @@ describe('advanced agent configuration prototype', () => {
 
     await user.click(screen.getByRole('button', { name: '监控' }));
     expect(screen.getByRole('heading', { name: '监控' })).toBeInTheDocument();
-    expect(screen.getByText('WhatsApp 模板发送失败率升高')).toBeInTheDocument();
-    expect(screen.getByText('Agent 运行链路')).toBeInTheDocument();
+    expect(screen.getByText('当前服务状态')).toBeInTheDocument();
+    expect(screen.getByText('部分服务受影响')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '实时运行' }));
+    expect(screen.getAllByText('conv_81A2')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: '事件与事故' }));
+    expect(screen.getByText('MODEL_RATE_LIMIT')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '依赖与容量' }));
+    expect(screen.getByText('模型请求配额')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '报表' }));
     expect(screen.getByRole('heading', { name: '报表' })).toBeInTheDocument();
-    expect(screen.getByText('单解决成本')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '版本对比' }));
-    expect(screen.getByText('版本对比趋势')).toBeInTheDocument();
+    expect(screen.getByText('获得回答机会')).toBeInTheDocument();
+    expect(screen.queryByText('Agent 解决率')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '自动化漏斗' }));
+    expect(screen.getAllByText('Agent受限').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('系统执行失败').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: 'Agent能力' }));
+    expect(screen.getAllByText('订单物流查询').length).toBeGreaterThan(0);
+  });
+
+  it('supports the complete monitoring and reporting operations workflow', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '监控' }));
+    expect(screen.getByLabelText('Agent 筛选')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '实时运行' }));
+    await user.click(screen.getByRole('button', { name: '查看会话 conv_81A2' }));
+    expect(screen.getByRole('dialog', { name: '会话详情' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '查看 Run 详情' }));
+    expect(screen.getByRole('dialog', { name: 'Run 详情' })).toBeInTheDocument();
+    expect(screen.getByText('Span 时间轴')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '关闭 Run 详情' }));
+
+    await user.click(screen.getByRole('button', { name: '事件与事故' }));
+    await user.click(screen.getByRole('button', { name: '处理 INC-240731-03' }));
+    expect(screen.getByRole('dialog', { name: '事故详情' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '更新处理进度' }));
+    expect(screen.getAllByText('处理中').length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: '告警配置' }));
+    await user.click(screen.getByRole('button', { name: '新建规则' }));
+    expect(screen.getByRole('dialog', { name: '新建告警规则' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '保存规则' }));
+    expect(screen.getByText('新建告警规则')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '报表' }));
+    await user.click(screen.getByRole('button', { name: '指标口径' }));
+    expect(screen.getByRole('dialog', { name: '指标口径与数据源' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '关闭指标口径' }));
+    await user.click(screen.getByRole('button', { name: '保存视图' }));
+    expect(screen.getByRole('dialog', { name: '保存报表视图' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '确认保存视图' }));
+    expect(screen.getByText('我的运营视图')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '导出' }));
+    expect(screen.getByRole('dialog', { name: '导出任务' })).toBeInTheDocument();
+    expect(screen.getByText('生成中')).toBeInTheDocument();
   });
 
   it('delivers a long answer as several semantic customer messages', async () => {
@@ -389,7 +438,7 @@ describe('advanced agent configuration prototype', () => {
     await user.click(screen.getByRole('button', { name: '日志' }));
     expect(screen.getByText('运行日志实时捕获系统操作轨迹，详细记载用户请求与 AI 反馈的交互过程。')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '监控' }));
-    expect(screen.getByText('运行中 Run')).toBeInTheDocument();
+    expect(screen.getByText('当前服务状态')).toBeInTheDocument();
   });
 
   it('adds a configurable session variable field', async () => {
