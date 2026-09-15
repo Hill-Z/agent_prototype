@@ -1,9 +1,29 @@
+.management-body { grid-template-columns: auto minmax(0, 1fr); }
+.management-sidebar { width: 202px; min-width: 0; height: 100%; padding: 0; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid #dde2e8; background: #f2f3f5; transition: width .18s ease; }
+.management-nav-scroll { flex: 1; min-height: 0; padding: 8px; overflow: auto; scrollbar-width: thin; }
+.management-sidebar section { margin: 7px 0 13px; }
+.management-sidebar h3 { height: 22px; margin: 0 11px 3px; display: flex; align-items: center; color: #8d96a4; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.management-sidebar button { width: 100%; min-height: 35px; padding: 0 11px; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 5px; color: #303641; background: transparent; cursor: pointer; white-space: nowrap; }
+.management-sidebar button svg { flex: 0 0 17px; color: #8791a0; }
+.management-sidebar button:hover { background: #e8eaee; }
+.management-sidebar button.active { background: #fff; color: #263247; font-weight: 600; box-shadow: 0 1px 2px #33445a0c; }
+.management-sidebar button.active svg { color: #3569ff; }
+.management-sidebar-toggle { flex: 0 0 44px; border-radius: 0 !important; border-top: 1px solid #dfe3e8 !important; }
+.management-sidebar-toggle svg { transition: transform .18s ease; }
+.management-sidebar.collapsed { width: 54px; }
+.management-sidebar.collapsed .management-nav-scroll { padding: 8px 7px; overflow-x: hidden; }
+.management-sidebar.collapsed section { margin-bottom: 8px; padding-bottom: 7px; border-bottom: 1px solid #e0e4e9; }
+.management-sidebar.collapsed section:last-child { border-bottom: 0; }
+.management-sidebar.collapsed h3, .management-sidebar.collapsed button span { display: none; }
+.management-sidebar.collapsed button { min-height: 36px; padding: 0; justify-content: center; gap: 0; }
+.management-sidebar.collapsed .management-sidebar-toggle svg { transform: rotate(180deg); }
 .cards-main { min-width: 0; min-height: 0; overflow: hidden; }
 .cards-frame { display: block; width: 100%; height: 100%; border: 0; background: #f6f7f9; }
-.management-sidebar { background: #f2f3f5; padding: 10px 8px; }
-.management-sidebar section { margin: 10px 0 16px; }
-.management-sidebar button { min-height: 35px; font-size: 13px; color: #303641; }
-.management-sidebar button svg { color: #8791a0; }
-.management-sidebar button.active { background: white; color: #263247; font-weight: 600; }
-.management-sidebar button.active svg { color: #3569ff; }
-@media (max-width: 700px) { .cards-body { grid-template-columns: 150px minmax(0, 1fr); } }
+.managed-feature-main { min-width: 0; overflow: auto; }
+.development-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: #1722394d; }
+.development-dialog { width: min(360px, 100%); padding: 28px; border-radius: 10px; background: #fff; box-shadow: 0 18px 65px #1b2c4930; text-align: center; }
+.development-dialog > span { width: 42px; height: 42px; margin: 0 auto 14px; display: grid; place-items: center; border-radius: 10px; color: #3475e8; background: #edf4ff; }
+.development-dialog h2 { margin: 0 0 8px; font-size: 18px; }
+.development-dialog p { margin: 0 0 22px; color: #7b8799; line-height: 1.7; }
+.development-dialog button { min-width: 88px; }
+@media (max-width: 700px) { .management-sidebar { width: 166px; } .management-sidebar.collapsed { width: 50px; } }

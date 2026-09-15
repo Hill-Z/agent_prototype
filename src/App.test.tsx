@@ -97,15 +97,17 @@ describe('advanced agent configuration prototype', () => {
     expect(document.querySelector('.runtime-channel')).toHaveTextContent('WhatsApp');
   });
 
-  it('expands the global sidebar and shows read-only channel capabilities outside Agent configuration', async () => {
+  it('collapses the complete management sidebar and opens developed channel capabilities', async () => {
     const user = userEvent.setup();
     render(<App />);
 
+    expect(screen.getByRole('button', { name: '收起侧边栏' })).toHaveAttribute('aria-expanded', 'true');
+    await user.click(screen.getByRole('button', { name: '收起侧边栏' }));
+    expect(screen.getByRole('button', { name: '展开侧边栏' })).toHaveAttribute('aria-expanded', 'false');
     await user.click(screen.getByRole('button', { name: '展开侧边栏' }));
-    expect(screen.getByRole('button', { name: '收起侧边栏' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '渠道' })).toHaveTextContent('渠道');
+    expect(screen.getByRole('button', { name: '渠道发布' })).toHaveTextContent('渠道发布');
 
-    await user.click(screen.getByRole('button', { name: '渠道' }));
+    await user.click(screen.getByRole('button', { name: '渠道发布' }));
     expect(screen.getByRole('heading', { name: '渠道能力' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '测试连接' })).not.toBeInTheDocument();
     expect(screen.queryByText('行为规则')).not.toBeInTheDocument();
@@ -114,6 +116,20 @@ describe('advanced agent configuration prototype', () => {
     expect(screen.getAllByText('已接入')).toHaveLength(4);
     expect(screen.queryByRole('button', { name: '新增渠道' })).not.toBeInTheDocument();
     expect(screen.queryByText('channel')).not.toBeInTheDocument();
+  });
+
+  it('shows the complete navigation and a development dialog for unfinished pages', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/?view=apps');
+    render(<App />);
+    const managementNav = screen.getByLabelText('管理导航');
+    for (const item of ['模板广场', '我的应用', '运行分析', '知识库', '记忆库', '轻量记忆库', '专业词库', '问答对', '知识发现', '图库', '内置', '扩展', '工作流', 'MCP', '技能', '卡片', '第三方集成', '渠道发布', '自动测评', '变量管理', '标签管理']) {
+      expect(within(managementNav).getByRole('button', { name: item })).toBeInTheDocument();
+    }
+    await user.click(screen.getByRole('button', { name: '模板广场' }));
+    expect(screen.getByRole('dialog', { name: '模板广场开发中' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '知道了' }));
+    expect(screen.queryByRole('dialog', { name: '模板广场开发中' })).not.toBeInTheDocument();
   });
 
   it('configures lightweight customer memory and binds cross-channel identities', async () => {
@@ -555,7 +571,7 @@ describe('advanced agent configuration prototype', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '工具' }));
+    await user.click(screen.getByRole('button', { name: '内置' }));
     expect(screen.getByRole('heading', { name: '工具' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '新建工具' }));
     const dialog = screen.getByRole('dialog', { name: '新建工具' });

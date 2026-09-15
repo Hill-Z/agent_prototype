@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowRightCircle, PlusCircle, Search, Tag } from 'lucide-react';
-import { ManagementSidebar } from '../management/ManagementSidebar';
+import { ManagementSidebar, type ManagementArea } from '../management/ManagementSidebar';
 
 type AgentKind = '导购智能体' | '通用智能体' | '聊天流程' | '工作流' | '客服智能体';
 const agents: Array<{ id: number; name: string; kind: AgentKind; description?: string; tag?: string }> = [
@@ -15,13 +15,13 @@ const agents: Array<{ id: number; name: string; kind: AgentKind; description?: s
 ];
 const tabs: Array<'全部' | AgentKind> = ['全部', '导购智能体', '通用智能体', '聊天流程', '工作流', '客服智能体'];
 
-export function ApplicationManagementPage({ openAgent, openSkills, openTools, openCards }: { openAgent: () => void; openSkills: () => void; openTools: () => void; openCards: () => void }) {
+export function ApplicationManagementPage({ openAgent, navigate }: { openAgent: () => void; navigate: (area: ManagementArea) => void }) {
   const [tab, setTab] = useState<(typeof tabs)[number]>('全部');
   const [query, setQuery] = useState('');
   const [advancedOnly, setAdvancedOnly] = useState(false);
   const visible = useMemo(() => agents.filter(agent => (tab === '全部' || agent.kind === tab) && (!advancedOnly || agent.name === 'new高级智能体') && `${agent.name}${agent.description}${agent.tag}`.toLowerCase().includes(query.trim().toLowerCase())), [tab, query, advancedOnly]);
   return <div className="management-body applications-body">
-    <ManagementSidebar active="我的应用" onOpenApps={() => undefined} onOpenSkills={openSkills} onOpenTools={openTools} onOpenCards={openCards} />
+    <ManagementSidebar active="我的应用" navigate={navigate} />
     <main className="applications-main">
       <header className="applications-toolbar">
         <nav aria-label="应用类型">{tabs.map(value => <button key={value} className={tab === value ? 'active' : ''} onClick={() => setTab(value)}>{value}</button>)}</nav>
