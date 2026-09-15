@@ -6,7 +6,20 @@ import App from './App';
 describe('advanced agent configuration prototype', () => {
   beforeEach(() => {
     localStorage.clear();
+    window.history.replaceState(null, '', '/?view=agent');
+  });
+
+  it('starts from my applications and edits an advanced agent from its card', async () => {
+    const user = userEvent.setup();
     window.history.replaceState(null, '', '/');
+    render(<App />);
+
+    expect(screen.getByRole('button', { name: '我的应用' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('region', { name: '应用列表' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '编辑 new高级智能体' }));
+    expect(screen.getAllByText('Doubao-Seed-2.0-pro').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: '返回我的应用' }));
+    expect(screen.getByRole('region', { name: '应用列表' })).toBeInTheDocument();
   });
 
   it('opens card management from the tools and skills sidebar', async () => {
