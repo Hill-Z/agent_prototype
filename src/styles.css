@@ -22,25 +22,26 @@ button { color: inherit; }
   overflow: hidden;
 }
 .top-header {
-  height: 50px;
-  flex: 0 0 50px;
+  height: 55px;
+  flex: 0 0 55px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
+  padding: 0 24px;
   background: #fff;
   border-bottom: 1px solid #e7eaf0;
 }
 .brand, .account-area, .agent-identity, .agent-chip, .agent-actions, .config-section-title,
 .section-actions, .setting-line, .subsection-heading, .capability-row, .drawer-header,
 .drawer-footer, .trace-card > div, .history-arrows { display: flex; align-items: center; }
-.brand { gap: 9px; font-size: 15px; }
-.brand-mark { width: 22px; height: 22px; border-radius: 5px; background: #4598ed; position: relative; }
-.brand-mark::after { content: ""; position: absolute; inset: 5px; border: 2px solid #fff; border-left: 0; }
+.brand { gap: 8px; font-size: 22px; color: #30343b; }
+.brand strong { font-weight: 500; letter-spacing: -.02em; }
+.brand-mark { width: 27px; height: 25px; position: relative; background: linear-gradient(135deg,#315dff 0 50%,#2cb3ff 50%); clip-path: polygon(50% 0,100% 88%,86% 100%,62% 58%,38% 58%,25% 100%,0 88%); }
 .account-area { gap: 9px; color: #555f72; }
 .account-area div { display: grid; gap: 1px; }
 .account-area small, .agent-chip small { color: #929aaa; font-size: 11px; }
-.account-avatar { width: 27px; height: 27px; border-radius: 50%; background: #e7edf6; border: 1px solid #dce3ec; }
+.account-avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: #2164eb; border: 0; color: #fff; font-size: 12px; }
+.account-avatar::after { content: "A"; }
 
 .app-body { min-height: 0; flex: 1; display: flex; }
 .global-sidebar {
@@ -723,7 +724,7 @@ button.data-row:hover { background: #f7fbff; }
 .review-filters { display: flex; gap: 10px; margin-top: 14px; }.review-filters select { width: 160px; }.review-filters .search-field { width: 220px; }
 .empty-review { min-height: 440px; display: grid; place-content: center; justify-items: center; color: #929baa; }
 
-.management-body { height: calc(100vh - 50px); display: grid; grid-template-columns: 200px minmax(0, 1fr); background: #f5f6f8; }
+.management-body { height: calc(100vh - 55px); display: grid; grid-template-columns: 200px minmax(0, 1fr); background: #f5f6f8; }
 .management-sidebar { padding: 14px 10px; overflow-y: auto; border-right: 1px solid #e1e5ea; background: #fff; }
 .management-sidebar section { margin: 12px 0 20px; }
 .management-sidebar h3 { margin: 0 10px 7px; color: #929baa; font-size: 12px; font-weight: 500; }
