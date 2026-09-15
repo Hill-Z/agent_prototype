@@ -9,6 +9,20 @@ describe('advanced agent configuration prototype', () => {
     window.history.replaceState(null, '', '/');
   });
 
+  it('opens card management from the tools and skills sidebar', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/?view=cards');
+    render(<App />);
+
+    expect(screen.getByRole('button', { name: '卡片' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByTitle('卡片模板管理')).toHaveAttribute('src', '/cards/index.html');
+
+    await user.click(screen.getByRole('button', { name: '技能' }));
+    expect(screen.getByRole('heading', { name: '技能' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '卡片' }));
+    expect(screen.getByTitle('卡片模板管理')).toBeInTheDocument();
+  });
+
   it('renders the current advanced-agent workspace and configuration modules', () => {
     render(<App />);
 
