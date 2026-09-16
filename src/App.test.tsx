@@ -28,7 +28,7 @@ describe('advanced agent configuration prototype', () => {
     render(<App />);
 
     expect(screen.getByRole('button', { name: '卡片' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByTitle('卡片模板管理')).toHaveAttribute('src', '/cards/index.html');
+    expect(screen.getByTitle('卡片模板管理')).toHaveAttribute('src', '/cards/index.html?v=20260916-7');
 
     await user.click(screen.getByRole('button', { name: '技能' }));
     expect(screen.getByRole('heading', { name: '技能' })).toBeInTheDocument();
