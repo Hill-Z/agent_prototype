@@ -37,4 +37,12 @@ describe('customer-defined card studio', () => {
     expect(script).toContain('defaultValue');
     expect(script).toContain('custom_fields.TextField_38');
   });
+
+  it('includes a question-guide card that can be referenced after an opening message', () => {
+    expect(script).toContain("archetype: 'guide'");
+    expect(script).toContain('问题引导卡');
+    expect(script).toContain('开场白后自动发送');
+    expect(script).toContain('换一批');
+    expect(script).toContain('data-guide-question');
+  });
 });

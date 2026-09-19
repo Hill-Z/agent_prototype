@@ -6,6 +6,7 @@
   const storageKey = 'uagent-card-studio-v5';
   const PAGE_SIZE = 8;
   const fieldTypes = { text: '文本', tag: '标签', image: '图片', link: '链接' };
+  const guideLayouts = { list: '文字列表', image: '图文分类' };
   const productImages = [
     'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=900&q=80',
     'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=900&q=80',
@@ -45,6 +46,27 @@
   const createTemplate = (id, name, archetype, description, mode = 'single') => ({
     id, name, archetype, description, mode, max: archetype === 'product' ? 6 : 5,
     fields: starterFields(archetype), actions: [makeAction(archetype === 'product' ? '立即了解' : '查看详情', archetype === 'product' ? '介绍一下 {{title}}' : '帮我查看 {{recordId}} 的详情')]
+  });
+
+  const createGuideTemplate = (id = '', name = '', description = '') => ({
+    id, name, archetype: 'guide', description, mode: 'single', max: 5, fields: [], actions: [],
+    guide: {
+      title: '猜你想问', intro: '选择一个问题，马上为你解答', placement: 'opening',
+      categoryLevel: 'one', layout: 'list', batchSize: 5, rotate: true, accentColor: '#3569ff',
+      categories: [
+        { id: 'guide_account', name: '账户服务', parentId: '', image: '', enabled: true },
+        { id: 'guide_order', name: '订单售后', parentId: '', image: '', enabled: true },
+        { id: 'guide_product', name: '产品使用', parentId: '', image: '', enabled: true }
+      ],
+      questions: [
+        { id: 'question_reset', categoryId: 'guide_account', label: '如何重置登录密码？', submitText: '如何重置登录密码？', enabled: true },
+        { id: 'question_invoice', categoryId: 'guide_account', label: '如何开具发票？', submitText: '如何开具发票？', enabled: true },
+        { id: 'question_refund', categoryId: 'guide_order', label: '退款多久到账？', submitText: '退款多久到账？', enabled: true },
+        { id: 'question_track', categoryId: 'guide_order', label: '如何查看订单物流？', submitText: '如何查看订单物流？', enabled: true },
+        { id: 'question_install', categoryId: 'guide_product', label: '如何安装和使用产品？', submitText: '如何安装和使用产品？', enabled: true }
+      ],
+      triggers: [{ id: 'trigger_opening', name: '开场白后展示', type: 'opening', keyword: '', priority: 1, enabled: true }]
+    }
   });
 
   const udeskTicketFields = () => [
@@ -151,8 +173,10 @@
   ];
   servicePackage.actions = [makeAction('立即开通', '我要开通 {{name}}')];
 
+  const questionGuide = createGuideTemplate('question_guide', '新会话问题引导', '在开场白后展示常见问题，帮助客户快速开始对话。');
+
   const examples = [ticketDetail, ticketList, planConfirm, refund, productRecommend, productDetail,
-    memberBenefits, storeRecommend, orderDetail, couponList, articleList, servicePackage];
+    memberBenefits, storeRecommend, orderDetail, couponList, articleList, servicePackage, questionGuide];
 
   let templates = loadTemplates();
   let view = 'home';
@@ -167,6 +191,7 @@
   let deleteId = null;
   let newFieldType = 'text';
   let newFieldSource = 'field';
+  let guidePreview = { categoryId: '', batch: 0 };
 
   function loadTemplates() {
     try {
@@ -197,7 +222,11 @@
   function persist() { localStorage.setItem(storageKey, JSON.stringify(templates)); }
   function toast(message) { toastNode.textContent = message; toastNode.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastNode.classList.remove('show'), 2400); }
 
-  function templateType(template) { return template.archetype === 'product' ? '商品卡片' : '信息卡片'; }
+  function templateType(template) {
+    if (template.archetype === 'product') return '商品卡片';
+    if (template.archetype === 'guide') return '问题引导卡';
+    return '信息卡片';
+  }
 
   function previewValue(field, template, index = 0) {
     if ((field.source || 'field') === 'fixed') return field.fixedValue || '';
@@ -211,7 +240,31 @@
     return field.sample || field.defaultValue || '';
   }
 
+  function guideData(template) {
+    return template.guide || createGuideTemplate().guide;
+  }
+
+  function guideCategories(template) {
+    return guideData(template).categories.filter(category => category.enabled !== false && (!category.parentId || guideData(template).categoryLevel === 'two'));
+  }
+
+  function renderGuideCard(template, mini = false) {
+    const guide = guideData(template);
+    const categories = guideCategories(template);
+    const currentCategory = categories.find(category => category.id === guidePreview.categoryId) || categories[0];
+    const questions = guide.questions.filter(question => question.enabled !== false && question.categoryId === currentCategory?.id);
+    const batchSize = Math.max(1, Math.min(10, Number(guide.batchSize) || 5));
+    const start = guide.rotate ? (guidePreview.batch % Math.max(1, Math.ceil(questions.length / batchSize))) * batchSize : 0;
+    const visible = questions.slice(start, start + batchSize);
+    const shown = visible.length ? visible : questions.slice(0, batchSize);
+    const hasMore = questions.length > batchSize;
+    const categoryNav = categories.map(category => `<button type="button" data-guide-category="${esc(category.id)}" class="${category.id === currentCategory?.id ? 'active' : ''}">${guide.layout === 'image' && category.image ? `<img src="${esc(safeUrl(category.image))}" alt="">` : ''}<span>${esc(category.name)}</span></button>`).join('');
+    const questionRows = shown.map((question, index) => `<button type="button" class="guide-question" data-guide-question="${esc(question.id)}"><span>${index + 1}</span><strong>${esc(question.label)}</strong><i>›</i></button>`).join('') || '<p class="guide-empty">当前分类暂无问题</p>';
+    return `<article class="guide-card" style="--guide-accent:${color(guide.accentColor)}"><div class="guide-title"><div><h3>${esc(guide.title || '猜你想问')}</h3>${guide.intro ? `<p>${esc(guide.intro)}</p>` : ''}</div><span>问题引导</span></div><nav class="guide-categories ${guide.layout === 'image' ? 'image' : ''}">${categoryNav}</nav><div class="guide-questions">${questionRows}</div>${hasMore && !mini ? `<button type="button" class="guide-refresh" data-guide-refresh>换一批 <span>↻</span></button>` : ''}</article>`;
+  }
+
   function renderCard(template, index = 0, mini = false) {
+    if (template.archetype === 'guide') return renderGuideCard(template, mini);
     const fields = template.fields.filter(field => field.enabled);
     const image = template.archetype === 'product' ? fields.find(field => field.type === 'image') : null;
     const title = fields.find(field => field.type === 'text');
@@ -249,6 +302,11 @@
   }
 
   function renderPreview(template, mini = false) {
+    if (template.archetype === 'guide') {
+      const guide = guideData(template);
+      const greeting = guide.placement === 'opening' ? '<div class="guide-greeting"><span>智能助手</span><p>你好，很高兴为你服务！</p></div>' : '';
+      return `<div class="guide-message-preview">${greeting}${renderGuideCard(template, mini)}</div>`;
+    }
     const count = template.mode === 'list' ? Math.min(Number(template.max) || 3, mini ? 1 : 3) : 1;
     const cards = Array.from({ length: count }, (_, index) => renderCard(template, index, mini)).join('');
     return `<div class="card-list ${template.mode === 'list' && template.archetype === 'product' ? 'horizontal' : ''}">${cards}</div>${template.mode === 'list' && !mini ? (template.archetype === 'product' ? '<div class="carousel-controls"><button type="button" data-carousel-dir="-1" aria-label="上一个商品">‹</button><span>左右查看商品</span><button type="button" data-carousel-dir="1" aria-label="下一个商品">›</button></div>' : `<div class="more">最多展示 ${template.max} 条</div>`) : ''}`;
@@ -261,13 +319,43 @@
     const visible = matches.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
     app.innerHTML = `<section class="page">
       <header class="page-head"><div><h1>卡片模板</h1><p>管理智能体使用的卡片模板</p></div><button class="primary" data-action="new">＋ 新建模板</button></header>
-      <div class="toolbar"><nav class="tabs">${[['all','全部'],['info','信息卡片'],['product','商品卡片']].map(([key,label]) => `<button class="${filter === key ? 'active' : ''}" data-filter="${key}">${label}</button>`).join('')}</nav><label class="search"><input id="search" value="${esc(query)}" placeholder="搜索模板名称"></label><span class="result-count">${matches.length} 个模板</span></div>
+      <div class="toolbar"><nav class="tabs">${[['all','全部'],['info','信息卡片'],['product','商品卡片'],['guide','问题引导卡']].map(([key,label]) => `<button class="${filter === key ? 'active' : ''}" data-filter="${key}">${label}</button>`).join('')}</nav><label class="search"><input id="search" value="${esc(query)}" placeholder="搜索模板名称"></label><span class="result-count">${matches.length} 个模板</span></div>
       <div class="template-grid">${visible.map(template => `<article class="template-tile"><div class="tile-head"><div class="tile-title"><h3>${esc(template.name)}</h3><span class="kind ${template.archetype}">${templateType(template)}</span></div><p class="tile-desc">${esc(template.description)}</p></div><div class="tile-preview">${renderPreview(template, true)}</div><div class="tile-footer"><div class="tile-actions"><button class="link-btn" data-edit="${esc(template.id)}">编辑</button><button class="link-btn danger" data-delete-template="${esc(template.id)}">删除</button></div></div></article>`).join('') || '<div class="empty">没有找到模板，可以新建一个。</div>'}</div>
       ${pages > 1 ? `<div class="pagination"><button data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>‹</button>${Array.from({ length: pages }, (_, index) => `<button class="${page === index + 1 ? 'active' : ''}" data-page="${index + 1}">${index + 1}</button>`).join('')}<button data-page="${page + 1}" ${page === pages ? 'disabled' : ''}>›</button></div>` : ''}
     </section>${renderModal()}`;
   }
 
+  function renderGuideCategory(category) {
+    const guide = guideData(draft);
+    const parents = guide.categories.filter(item => item.id !== category.id && !item.parentId);
+    return `<div class="guide-config-row" data-guide-category-id="${esc(category.id)}"><button type="button" class="drag" data-guide-category-move="up" title="上移">↑</button><div class="guide-category-fields"><input data-guide-category="name" value="${esc(category.name)}" placeholder="分类名称"><select data-guide-category="parentId"><option value="">一级分类</option>${parents.map(parent => `<option value="${esc(parent.id)}" ${category.parentId === parent.id ? 'selected' : ''}>${esc(parent.name)}</option>`).join('')}</select>${guide.layout === 'image' ? `<input data-guide-category="image" value="${esc(category.image || '')}" placeholder="分类图片链接（可选）">` : ''}</div><button type="button" class="switch ${category.enabled !== false ? 'on' : ''}" data-guide-category-enabled="${esc(category.id)}"><i></i><span>${category.enabled !== false ? '启用' : '停用'}</span></button><button type="button" class="danger" data-guide-category-remove="${esc(category.id)}">删除</button></div>`;
+  }
+
+  function renderGuideQuestion(question, index) {
+    const guide = guideData(draft);
+    return `<div class="guide-question-config" data-guide-question-id="${esc(question.id)}"><button type="button" class="drag" data-guide-question-move="up" title="上移">↑</button><span class="index">${String(index + 1).padStart(2, '0')}</span><div><label>客户看到的问题<input data-guide-question="label" value="${esc(question.label)}" placeholder="例如：退款多久到账？"></label><label>点击后发送给 Agent 的内容<input data-guide-question="submitText" value="${esc(question.submitText || question.label)}" placeholder="默认与展示问题相同"></label></div><label>分类<select data-guide-question="categoryId">${guide.categories.filter(category => category.enabled !== false).map(category => `<option value="${esc(category.id)}" ${question.categoryId === category.id ? 'selected' : ''}>${esc(category.name)}</option>`).join('')}</select></label><button type="button" class="switch ${question.enabled !== false ? 'on' : ''}" data-guide-question-enabled="${esc(question.id)}"><i></i><span>${question.enabled !== false ? '启用' : '停用'}</span></button><button type="button" class="danger" data-guide-question-remove="${esc(question.id)}">删除</button></div>`;
+  }
+
+  function renderGuideTrigger(trigger) {
+    return `<div class="guide-trigger-row" data-guide-trigger-id="${esc(trigger.id)}"><input data-guide-trigger="name" value="${esc(trigger.name)}" placeholder="触发器名称"><select data-guide-trigger="type"><option value="opening" ${trigger.type === 'opening' ? 'selected' : ''}>新会话开场白后</option><option value="keyword" ${trigger.type === 'keyword' ? 'selected' : ''}>客户消息包含关键词</option></select>${trigger.type === 'keyword' ? `<input data-guide-trigger="keyword" value="${esc(trigger.keyword || '')}" placeholder="例如：帮助">` : '<span class="guide-trigger-note">开场白后自动发送</span>'}<input data-guide-trigger="priority" type="number" min="1" max="99" value="${Number(trigger.priority) || 1}" title="优先级"><button type="button" class="switch ${trigger.enabled !== false ? 'on' : ''}" data-guide-trigger-enabled="${esc(trigger.id)}"><i></i><span>${trigger.enabled !== false ? '启用' : '停用'}</span></button><button type="button" class="danger" data-guide-trigger-remove="${esc(trigger.id)}">删除</button></div>`;
+  }
+
+  function renderGuideEditor() {
+    const guide = guideData(draft);
+    app.innerHTML = `<section><header class="editor-top"><button class="ghost" data-action="back">←</button><span class="crumb">卡片模板 /</span><strong>${editingId ? '编辑问题引导卡' : '新建问题引导卡'}</strong><div class="editor-actions"><button data-action="back">取消</button><button class="primary" data-action="save">${editingId ? '保存修改' : '创建模板'}</button></div></header>
+      <div class="editor-layout"><form class="editor-form" id="editor-form">
+        <section class="panel"><div class="panel-head"><h2>基本信息</h2></div><div class="panel-body"><div class="form-grid compact-basic"><label class="form-item wide"><span class="required">名称</span><input data-root="name" value="${esc(draft.name)}" placeholder="例如：售后服务引导"></label><label class="form-item wide"><span class="required">描述</span><textarea data-root="description" rows="2" placeholder="简单说明这张引导卡的适用场景">${esc(draft.description)}</textarea></label></div></div></section>
+        <section class="panel"><div class="panel-head"><h2>开场白引用</h2></div><div class="panel-body"><div class="guide-reference"><div><strong>作为开场白后的消息发送</strong><p>客户点击问题后，问题将作为一条真实的客户消息交给智能体处理。</p></div><select data-guide="placement"><option value="opening" ${guide.placement === 'opening' ? 'selected' : ''}>开场白后自动发送</option><option value="manual" ${guide.placement === 'manual' ? 'selected' : ''}>由工作流或智能体引用</option></select></div></div></section>
+        <section class="panel"><div class="panel-head"><h2>展示样式</h2></div><div class="panel-body"><div class="form-grid"><label class="form-item"><span>卡片标题</span><input data-guide="title" value="${esc(guide.title)}" placeholder="例如 猜你想问"></label><label class="form-item"><span>引导语</span><input data-guide="intro" value="${esc(guide.intro)}" placeholder="例如 选择一个问题，马上为你解答"></label><label class="form-item"><span>分类层级</span><select data-guide="categoryLevel"><option value="one" ${guide.categoryLevel === 'one' ? 'selected' : ''}>展示一级分类</option><option value="two" ${guide.categoryLevel === 'two' ? 'selected' : ''}>展示二级分类</option></select></label><label class="form-item"><span>展示样式</span><select data-guide="layout">${Object.entries(guideLayouts).map(([key,label]) => `<option value="${key}" ${guide.layout === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label><label class="form-item"><span>每批问题数</span><input data-guide="batchSize" type="number" min="1" max="10" value="${guide.batchSize}"></label><label class="form-item"><span>主题色</span><span class="color-input"><input data-guide="accentColor" type="color" value="${color(guide.accentColor)}"><input data-guide="accentColor" value="${color(guide.accentColor)}"></span></label></div><label class="guide-switch-line"><input data-guide="rotate" type="checkbox" ${guide.rotate ? 'checked' : ''}><span>开启“换一批”</span><small>同一分类问题超过每批数量时，客户可切换下一批。</small></label></div></section>
+        <section class="panel"><div class="panel-head row"><div><h2>分类</h2><p>支持一级或二级分类；图文样式可为分类配置图片。</p></div><button type="button" class="link-btn" data-guide-add-category>＋ 添加分类</button></div><div class="guide-category-list">${guide.categories.map(renderGuideCategory).join('')}</div></section>
+        <section class="panel"><div class="panel-head row"><div><h2>引导问题</h2><p>展示文案可以更友好；发送内容用于告诉 Agent 客户的真实诉求。</p></div><button type="button" class="link-btn" data-guide-add-question>＋ 添加问题</button></div><div class="guide-question-list">${guide.questions.map(renderGuideQuestion).join('')}</div></section>
+        <section class="panel"><div class="panel-head row"><div><h2>展示触发器</h2><p>按优先级匹配，命中后发送这张问题引导卡。</p></div><button type="button" class="link-btn" data-guide-add-trigger>＋ 添加触发器</button></div><div class="guide-trigger-list">${guide.triggers.map(renderGuideTrigger).join('')}</div></section>
+      </form><aside class="preview-pane"><div class="preview-head"><h2>实时预览</h2><span>● 自动更新</span></div><div class="preview-stage guide-stage"><div id="preview-content">${renderPreview(draft)}</div><div id="preview-feedback" class="preview-feedback hidden"></div></div></aside></div>
+    </section>`;
+  }
+
   function renderEditor() {
+    if (draft?.archetype === 'guide') { renderGuideEditor(); return; }
     app.innerHTML = `<section><header class="editor-top"><button class="ghost" data-action="back">←</button><span class="crumb">卡片模板 /</span><strong>${editingId ? '编辑模板' : '新建模板'}</strong><div class="editor-actions"><button data-action="back">取消</button><button class="primary" data-action="save">${editingId ? '保存修改' : '创建模板'}</button></div></header>
       <div class="editor-layout"><form class="editor-form" id="editor-form">
         <section class="panel"><div class="panel-head"><h2>基本信息</h2></div><div class="panel-body"><div class="form-grid compact-basic">
@@ -316,7 +404,7 @@
 
   function renderModal() {
     if (!modal) return '';
-    if (modal === 'starter') return `<div class="modal-backdrop"><section class="modal"><header class="modal-head"><h2>选择卡片类型</h2><button class="ghost" data-close-modal>×</button></header><div class="modal-body"><div class="starter-grid"><button class="starter" data-starter="info"><span class="type-icon">▤</span><h3>信息卡片</h3><p>让业务信息规整、醒目，快速看到状态和关键字段。</p><ul><li>支持单张或上下列表</li><li>适合工单、订单、套餐、会员</li><li>可配置文本、标签、链接和按钮</li></ul></button><button class="starter" data-starter="product"><span class="type-icon product">▧</span><h3>商品卡片</h3><p>图片主导的推荐卡片，突出价格、卖点和行动入口。</p><ul><li>支持单张或左右滑动列表</li><li>适合商品、门店、内容推荐</li><li>默认包含图片字段</li></ul></button></div></div></section></div>`;
+    if (modal === 'starter') return `<div class="modal-backdrop"><section class="modal guide-starter-modal"><header class="modal-head"><h2>选择卡片类型</h2><button class="ghost" data-close-modal>×</button></header><div class="modal-body"><div class="starter-grid"><button class="starter" data-starter="info"><span class="type-icon">▤</span><h3>信息卡片</h3><p>让业务信息规整、醒目，快速看到状态和关键字段。</p><ul><li>支持单张或上下列表</li><li>适合工单、订单、套餐、会员</li><li>可配置文本、标签、链接和按钮</li></ul></button><button class="starter" data-starter="product"><span class="type-icon product">▧</span><h3>商品卡片</h3><p>图片主导的推荐卡片，突出价格、卖点和行动入口。</p><ul><li>支持单张或左右滑动列表</li><li>适合商品、门店、内容推荐</li><li>默认包含图片字段</li></ul></button><button class="starter guide" data-starter="guide"><span class="type-icon guide">?</span><h3>问题引导卡</h3><p>在开场白后推荐可点击的问题，让客户快速开始对话。</p><ul><li>支持分类、二级分类和换一批</li><li>支持文字列表或图文分类</li><li>点击后作为真实客户消息发送</li></ul></button></div></div></section></div>`;
     if (modal === 'addField') return `<div class="modal-backdrop"><section class="modal"><header class="modal-head"><h2>添加展示字段</h2><button class="ghost" data-close-modal>×</button></header><div class="modal-body"><div class="form-grid"><label class="form-item"><span class="required">显示名称</span><input id="new-label" placeholder="例如 退款状态"></label><label class="form-item"><span>内容来源</span><select id="new-source"><option value="field" ${newFieldSource === 'field' ? 'selected' : ''}>接口字段</option><option value="fixed" ${newFieldSource === 'fixed' ? 'selected' : ''}>固定内容</option></select></label><label class="form-item"><span>显示类型</span><select id="new-type">${Object.entries(fieldTypes).filter(([key]) => draft.archetype === 'product' || key !== 'image').map(([key,label]) => `<option value="${key}" ${newFieldType === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label><div></div><div id="new-source-specific" class="form-item wide">${newSourceSpecific()}</div><div id="new-type-specific" class="form-item wide">${newFieldSpecific()}</div></div></div><footer class="modal-actions"><button data-close-modal>取消</button><button class="primary" data-confirm-field>添加字段</button></footer></section></div>`;
     const template = templates.find(item => item.id === deleteId);
     return `<div class="modal-backdrop"><section class="modal"><header class="modal-head"><h2>删除模板</h2><button class="ghost" data-close-modal>×</button></header><div class="modal-body"><p class="confirm-copy">确定删除“${esc(template?.name)}”吗？删除后不可恢复。</p></div><footer class="modal-actions"><button data-close-modal>取消</button><button class="primary" data-confirm-delete>确认删除</button></footer></section></div>`;
@@ -340,11 +428,12 @@
     draft = template ? clone(template) : null;
     expandedField = draft?.fields[0]?.id || null;
     expandedAction = null;
+    guidePreview = { categoryId: '', batch: 0 };
     view = 'editor'; modal = null; render();
   }
 
   function start(archetype) {
-    draft = createTemplate('', '', archetype, '', 'single');
+    draft = archetype === 'guide' ? createGuideTemplate('', '', '') : createTemplate('', '', archetype, '', 'single');
     editingId = null; expandedField = draft.fields[0]?.id; expandedAction = null; view = 'editor'; modal = null; render();
   }
 
@@ -357,6 +446,32 @@
     const target = event.target;
     if (target.dataset.root) {
       draft[target.dataset.root] = target.dataset.root === 'max' ? Math.max(1, Math.min(10, Number(target.value) || 1)) : target.value;
+      updatePreview(); return;
+    }
+    if (target.dataset.guide) {
+      const guide = guideData(draft);
+      guide[target.dataset.guide] = target.type === 'checkbox' ? target.checked : target.value;
+      updatePreview(); return;
+    }
+    if (target.dataset.guideCategory) {
+      const row = target.closest('[data-guide-category-id]');
+      const category = guideData(draft).categories.find(item => item.id === row?.dataset.guideCategoryId);
+      if (!category) return;
+      category[target.dataset.guideCategory] = target.value;
+      updatePreview(); return;
+    }
+    if (target.dataset.guideQuestion) {
+      const row = target.closest('[data-guide-question-id]');
+      const question = guideData(draft).questions.find(item => item.id === row?.dataset.guideQuestionId);
+      if (!question) return;
+      question[target.dataset.guideQuestion] = target.value;
+      updatePreview(); return;
+    }
+    if (target.dataset.guideTrigger) {
+      const row = target.closest('[data-guide-trigger-id]');
+      const trigger = guideData(draft).triggers.find(item => item.id === row?.dataset.guideTriggerId);
+      if (!trigger) return;
+      trigger[target.dataset.guideTrigger] = target.dataset.guideTrigger === 'priority' ? Number(target.value) || 1 : target.value;
       updatePreview(); return;
     }
     if (target.dataset.field) {
@@ -378,6 +493,8 @@
 
   app.addEventListener('change', event => {
     const target = event.target;
+    if (target.dataset.guide && ['layout', 'categoryLevel', 'placement'].includes(target.dataset.guide)) { renderGuideEditor(); return; }
+    if (target.dataset.guideTrigger && target.dataset.guideTrigger === 'type') { renderGuideEditor(); return; }
     if (target.id === 'new-type') {
       newFieldType = target.value;
       const specific = document.querySelector('#new-type-specific');
@@ -399,6 +516,54 @@
 
   app.addEventListener('click', event => {
     const target = event.target.closest('button'); if (!target) return;
+    if (target.dataset.guideAddCategory !== undefined) {
+      const guide = guideData(draft); guide.categories.push({ id: uid('category'), name: '新分类', parentId: '', image: '', enabled: true }); renderGuideEditor(); return;
+    }
+    if (target.dataset.guideCategoryRemove) {
+      const guide = guideData(draft); const id = target.dataset.guideCategoryRemove;
+      guide.categories = guide.categories.filter(category => category.id !== id);
+      guide.questions = guide.questions.filter(question => question.categoryId !== id);
+      guidePreview.categoryId = ''; renderGuideEditor(); return;
+    }
+    if (target.dataset.guideCategoryEnabled) {
+      const category = guideData(draft).categories.find(item => item.id === target.dataset.guideCategoryEnabled); category.enabled = !category.enabled; renderGuideEditor(); return;
+    }
+    if (target.dataset.guideCategoryMove) {
+      const guide = guideData(draft); const row = target.closest('[data-guide-category-id]'); const index = guide.categories.findIndex(item => item.id === row?.dataset.guideCategoryId);
+      if (index > 0) [guide.categories[index - 1], guide.categories[index]] = [guide.categories[index], guide.categories[index - 1]];
+      renderGuideEditor(); return;
+    }
+    if (target.dataset.guideAddQuestion !== undefined) {
+      const guide = guideData(draft); const category = guide.categories.find(item => item.enabled !== false);
+      guide.questions.push({ id: uid('question'), categoryId: category?.id || '', label: '新问题', submitText: '新问题', enabled: true }); renderGuideEditor(); return;
+    }
+    if (target.dataset.guideQuestionRemove) {
+      const guide = guideData(draft); guide.questions = guide.questions.filter(question => question.id !== target.dataset.guideQuestionRemove); renderGuideEditor(); return;
+    }
+    if (target.dataset.guideQuestionEnabled) {
+      const question = guideData(draft).questions.find(item => item.id === target.dataset.guideQuestionEnabled); question.enabled = !question.enabled; renderGuideEditor(); return;
+    }
+    if (target.dataset.guideQuestionMove) {
+      const guide = guideData(draft); const row = target.closest('[data-guide-question-id]'); const index = guide.questions.findIndex(item => item.id === row?.dataset.guideQuestionId);
+      if (index > 0) [guide.questions[index - 1], guide.questions[index]] = [guide.questions[index], guide.questions[index - 1]];
+      renderGuideEditor(); return;
+    }
+    if (target.dataset.guideAddTrigger !== undefined) {
+      const guide = guideData(draft); guide.triggers.push({ id: uid('trigger'), name: '关键词触发', type: 'keyword', keyword: '', priority: guide.triggers.length + 1, enabled: true }); renderGuideEditor(); return;
+    }
+    if (target.dataset.guideTriggerRemove) {
+      const guide = guideData(draft); guide.triggers = guide.triggers.filter(trigger => trigger.id !== target.dataset.guideTriggerRemove); renderGuideEditor(); return;
+    }
+    if (target.dataset.guideTriggerEnabled) {
+      const trigger = guideData(draft).triggers.find(item => item.id === target.dataset.guideTriggerEnabled); trigger.enabled = !trigger.enabled; renderGuideEditor(); return;
+    }
+    if (target.dataset.guideCategory) { guidePreview.categoryId = target.dataset.guideCategory; guidePreview.batch = 0; updatePreview(); return; }
+    if (target.dataset.guideRefresh !== undefined) { guidePreview.batch += 1; updatePreview(); return; }
+    if (target.dataset.guideQuestion) {
+      const question = guideData(draft).questions.find(item => item.id === target.dataset.guideQuestion); const node = document.querySelector('#preview-feedback');
+      if (question && node) { node.textContent = `客户发送：${question.submitText || question.label}`; node.classList.remove('hidden'); }
+      return;
+    }
     if (target.dataset.action === 'new') { modal = 'starter'; renderHome(); return; }
     if (target.dataset.closeModal !== undefined) { modal = null; render(); return; }
     if (target.dataset.starter) { start(target.dataset.starter); return; }
@@ -457,6 +622,16 @@
     if (templates.some(item => item.id === draft.id && item.id !== editingId)) return '模板名称已存在';
     if (!draft.name) return '请填写名称';
     if (!draft.description) return '请填写模板描述';
+    if (draft.archetype === 'guide') {
+      const guide = guideData(draft);
+      if (!guide.title.trim()) return '请填写卡片标题';
+      if (!guide.categories.some(category => category.enabled !== false && category.name.trim())) return '请至少启用一个分类';
+      if (!guide.questions.some(question => question.enabled !== false && question.label.trim() && question.submitText.trim())) return '请至少启用一个完整的问题';
+      if (guide.questions.some(question => !guide.categories.some(category => category.id === question.categoryId))) return '每个问题都需要归属一个分类';
+      if (!guide.triggers.some(trigger => trigger.enabled !== false)) return '请至少启用一个展示触发器';
+      if (guide.triggers.some(trigger => trigger.type === 'keyword' && !trigger.keyword.trim())) return '请填写关键词触发条件';
+      return '';
+    }
     if (!draft.fields.length) return '请至少添加一个展示字段';
     if (draft.archetype === 'info' && draft.fields.some(field => field.type === 'image')) return '信息卡片不支持图片字段';
     if (draft.fields.some(field => !field.label.trim())) return '请完整填写字段名称';

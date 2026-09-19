@@ -22,7 +22,9 @@ import { MemoryWorkspace } from './features/memory/MemoryWorkspace';
 import { RealtimeMonitorView, ReportsView } from './features/observability/ObservabilityViews';
 import { CardManagementPage } from './features/cards/CardManagementPage';
 import { ApplicationManagementPage } from './features/apps/ApplicationManagementPage';
+import { KnowledgeDiscoveryPage } from './features/discovery/KnowledgeDiscoveryPage';
 import { ManagementSidebar, type ManagementArea } from './features/management/ManagementSidebar';
+import { OnlineReferencePage } from './features/management/OnlineReferencePage';
 import './styles.css';
 import './features/cards/cards-shell.css';
 import './features/apps/applications.css';
@@ -129,14 +131,22 @@ function ResizableWorkspace({ children }: { children: ReactNode }) {
   </div>;
 }
 
+const managementAreas: ManagementArea[] = ['templates', 'apps', 'runtime', 'datasets', 'memory', 'lightMemory', 'terms', 'qa', 'discovery', 'gallery', 'tools', 'plugins', 'workflow', 'mcp', 'skills', 'cards', 'integrations', 'channels', 'evaluation', 'variables', 'tags'];
+const activeLabels: Partial<Record<ManagementArea, string>> = { templates: '模板中心', apps: '我的应用', runtime: '运行分析', datasets: '知识库', memory: '记忆库', lightMemory: '轻量记忆库', terms: '专业词库', qa: '问答对', discovery: '知识发现', gallery: '图库', tools: '内置', plugins: '扩展', workflow: '工作流', mcp: 'MCP', skills: '技能', cards: '卡片', integrations: '第三方集成', channels: '渠道发布', evaluation: '自动测评', variables: '变量管理', tags: '标签管理' };
+
 export default function App() {
   const [agentConfig, setAgentConfig] = useState(loadAgentConfig);
   const [guardrail, dispatch] = useReducer(guardrailReducer, undefined, loadGuardrailConfig);
   const [tab, setTab] = useState<WorkspaceTab>('orchestration'); const [dialog, setDialog] = useState<DialogKind>(null); const [toast, setToast] = useState('');
-  const [area, setArea] = useState<'agent' | 'memory' | 'channels' | 'skills' | 'tools' | 'cards' | 'apps'>(() => { const view = new URLSearchParams(window.location.search).get('view'); return view === 'agent' || view === 'cards' || view === 'skills' || view === 'tools' || view === 'memory' || view === 'channels' || view === 'apps' ? view : 'apps'; });
+  const [area, setArea] = useState<ManagementArea | 'agent'>(() => { const view = new URLSearchParams(window.location.search).get('view'); return view === 'agent' || managementAreas.includes(view as ManagementArea) ? view as ManagementArea | 'agent' : 'apps'; });
   useEffect(() => persistAgentConfig(agentConfig), [agentConfig]); useEffect(() => saveGuardrailConfig(guardrail), [guardrail]); useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 1800); return () => clearTimeout(timer); }, [toast]);
   useEffect(() => { const url = new URL(window.location.href); url.searchParams.set('view', area); window.history.replaceState(null, '', url); }, [area]);
   const navigate = (next: ManagementArea) => setArea(next);
   const restore = () => { setAgentConfig(loadSavedSnapshot()); setToast('已恢复到最近保存状态'); };
-  return <div className="app-shell"><TopHeader />{area === 'apps' ? <ApplicationManagementPage openAgent={() => setArea('agent')} navigate={navigate} /> : area === 'cards' ? <CardManagementPage navigate={navigate} /> : area === 'skills' ? <SkillManagementPage navigate={navigate} /> : area === 'tools' ? <ToolManagementPage navigate={navigate} /> : <><div className="management-body"><ManagementSidebar active={area === 'memory' ? '记忆库' : area === 'channels' ? '渠道发布' : '我的应用'} navigate={navigate} /><main className="workbench">{area === 'memory' ? <MemoryWorkspace config={agentConfig.longMemory} update={patch => setAgentConfig(current => ({ ...current, longMemory: { ...current.longMemory, ...patch } }))} notify={setToast} /> : area === 'channels' ? <ChannelWorkspace notify={setToast} /> : <><AgentHeader tab={tab} setTab={setTab} config={agentConfig} setConfig={setAgentConfig} notify={setToast} openPublish={() => setDialog('publish')} restore={restore} onBack={() => setArea('apps')} />{tab === 'orchestration' ? <ResizableWorkspace><ConfigurationPane config={agentConfig} setConfig={setAgentConfig} dialog={setDialog} guardrail={guardrail} dispatch={dispatch} /><RuntimePreviewPanel guardrail={guardrail} responseExperience={agentConfig.responseExperience} conversationBehavior={agentConfig.conversationBehavior} proactiveService={agentConfig.proactiveService} multimodal={agentConfig.multimodal} planning={agentConfig.planning} /></ResizableWorkspace> : tab === 'api' ? <ApiDocsView notify={setToast} /> : tab === 'logs' ? <LogsView /> : tab === 'monitor' ? <RealtimeMonitorView /> : tab === 'reports' ? <ReportsView /> : <ReviewView />}</>}</main></div><ConfigDialogs kind={dialog} config={agentConfig} setConfig={setAgentConfig} close={() => setDialog(null)} notify={setToast} /></>}{toast ? <Toast>{toast}</Toast> : null}</div>;
+  const managedContent = area === 'memory' ? <MemoryWorkspace config={agentConfig.longMemory} update={patch => setAgentConfig(current => ({ ...current, longMemory: { ...current.longMemory, ...patch } }))} notify={setToast} />
+    : area === 'channels' ? <ChannelWorkspace notify={setToast} />
+      : area === 'discovery' ? <KnowledgeDiscoveryPage notify={setToast} />
+        : area === 'agent' ? <><AgentHeader tab={tab} setTab={setTab} config={agentConfig} setConfig={setAgentConfig} notify={setToast} openPublish={() => setDialog('publish')} restore={restore} onBack={() => setArea('apps')} />{tab === 'orchestration' ? <ResizableWorkspace><ConfigurationPane config={agentConfig} setConfig={setAgentConfig} dialog={setDialog} guardrail={guardrail} dispatch={dispatch} /><RuntimePreviewPanel guardrail={guardrail} responseExperience={agentConfig.responseExperience} conversationBehavior={agentConfig.conversationBehavior} proactiveService={agentConfig.proactiveService} multimodal={agentConfig.multimodal} planning={agentConfig.planning} /></ResizableWorkspace> : tab === 'api' ? <ApiDocsView notify={setToast} /> : tab === 'logs' ? <LogsView /> : tab === 'monitor' ? <RealtimeMonitorView /> : tab === 'reports' ? <ReportsView /> : <ReviewView />}</>
+          : <OnlineReferencePage area={area} />;
+  return <div className="app-shell"><TopHeader />{area === 'apps' ? <ApplicationManagementPage openAgent={() => setArea('agent')} navigate={navigate} /> : area === 'cards' ? <CardManagementPage navigate={navigate} /> : area === 'skills' ? <SkillManagementPage navigate={navigate} /> : area === 'tools' ? <ToolManagementPage navigate={navigate} /> : <><div className="management-body"><ManagementSidebar active={area === 'agent' ? '我的应用' : activeLabels[area] ?? '我的应用'} navigate={navigate} /><main className="workbench">{managedContent}</main></div><ConfigDialogs kind={dialog} config={agentConfig} setConfig={setAgentConfig} close={() => setDialog(null)} notify={setToast} /></>}{toast ? <Toast>{toast}</Toast> : null}</div>;
 }
