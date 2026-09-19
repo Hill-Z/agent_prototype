@@ -33,6 +33,27 @@ export interface PlanningConfig {
   plannerPrompt: string;
 }
 
+export interface ModelParameters {
+  preset: string;
+  temperatureEnabled: boolean;
+  temperature: number;
+  topPEnabled: boolean;
+  topP: number;
+  frequencyEnabled: boolean;
+  frequencyPenalty: number;
+  presenceEnabled: boolean;
+  presencePenalty: number;
+  maxTokensEnabled: boolean;
+  maxTokens: number;
+  thinking: boolean;
+}
+
+export interface ModelPoolItem {
+  id: string;
+  modelId: string;
+  parameters: ModelParameters;
+}
+
 export const defaultPlannerPrompt = `你是客服智能体的任务规划器。请根据用户目标、当前对话和可用的 Skill、Tool 生成执行计划。
 
 规划规则：
@@ -74,7 +95,8 @@ export interface AgentConfig {
     asrProvider: string;
     language: string;
   };
-  model: { id: string; preset: string; temperatureEnabled: boolean; temperature: number; topPEnabled: boolean; topP: number; frequencyEnabled: boolean; frequencyPenalty: number; presenceEnabled: boolean; presencePenalty: number; maxTokensEnabled: boolean; maxTokens: number; thinking: boolean };
+  model: { id: string } & ModelParameters;
+  modelRouting: { pool: ModelPoolItem[]; retryCount: number };
 }
 
 export const defaultAgentConfig: AgentConfig = {
@@ -114,7 +136,12 @@ export const defaultAgentConfig: AgentConfig = {
   conversationBehavior: { mergeConsecutiveMessagesEnabled: true, inputCompletionMode: 'delay', inputWaitSeconds: 5, maxWaitSeconds: 20, customCompletionStrategy: '' },
   proactiveService: { longTaskNoticeEnabled: true, longTaskThresholdSeconds: 10, longTaskNoticeMessage: '稍等我一下，我正在为您处理。', asyncCompletionEnabled: true },
   multimodal: { imageEnabled: true, audioEnabled: true, asrProvider: 'Udesk ASR', language: '自动识别' },
-  model: { id: 'Doubao-Seed-2.0-pro', preset: 'balanced', temperatureEnabled: false, temperature: 0, topPEnabled: false, topP: 0, frequencyEnabled: false, frequencyPenalty: 0, presenceEnabled: false, presencePenalty: -2, maxTokensEnabled: false, maxTokens: 1, thinking: false }
+  model: { id: 'Doubao-Seed-2.0-pro', preset: 'balanced', temperatureEnabled: false, temperature: 0, topPEnabled: false, topP: 0, frequencyEnabled: false, frequencyPenalty: 0, presenceEnabled: false, presencePenalty: -2, maxTokensEnabled: false, maxTokens: 1, thinking: false },
+  modelRouting: { pool: [
+    { id: 'model-primary', modelId: 'Doubao-Seed-2.0-pro', parameters: { preset: 'balanced', temperatureEnabled: false, temperature: 0, topPEnabled: false, topP: 0, frequencyEnabled: false, frequencyPenalty: 0, presenceEnabled: false, presencePenalty: -2, maxTokensEnabled: false, maxTokens: 1, thinking: false } },
+    { id: 'model-fallback-1', modelId: 'DeepSeek-V3', parameters: { preset: 'balanced', temperatureEnabled: false, temperature: 0, topPEnabled: false, topP: 0, frequencyEnabled: false, frequencyPenalty: 0, presenceEnabled: false, presencePenalty: -2, maxTokensEnabled: false, maxTokens: 1, thinking: true } },
+    { id: 'model-fallback-2', modelId: 'gpt-4o-mini', parameters: { preset: 'balanced', temperatureEnabled: false, temperature: 0, topPEnabled: false, topP: 0, frequencyEnabled: false, frequencyPenalty: 0, presenceEnabled: false, presencePenalty: -2, maxTokensEnabled: false, maxTokens: 1, thinking: false } }
+  ], retryCount: 1 }
 };
 
 export const createId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
